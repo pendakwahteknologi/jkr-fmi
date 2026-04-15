@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JKR FMI — Log & Audit Trail</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-abyss: #060a10;
+            --bg-plate: #0b1018;
+            --bg-raised: #111822;
+            --text-primary: #e8ecf2;
+            --text-secondary: #7a8599;
+            --text-dim: #4a5568;
+            --amber: #d4a017;
+            --amber-light: #e8b923;
+            --amber-dim: rgba(212,160,23,0.12);
+            --steel: #4a7cad;
+            --steel-dim: rgba(74,124,173,0.10);
+            --steel-border: rgba(74,124,173,0.20);
+            --glass-bg: rgba(11,16,24,0.65);
+            --glass-border: rgba(255,255,255,0.06);
+            --green: #22c55e;
+            --red: #ef4444;
+            --font-display: 'Bebas Neue', sans-serif;
+            --font-body: 'DM Sans', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: var(--font-body); background: var(--bg-abyss); color: var(--text-primary); line-height: 1.6; min-height: 100vh; }
+        .page { max-width: 1200px; margin: 0 auto; padding: 1.5rem; }
+        .hdr { display: flex; align-items: center; gap: 1rem; padding-bottom: 1rem; margin-bottom: 1.5rem; border-bottom: 1px solid var(--glass-border); flex-wrap: wrap; }
+        .hdr img { width: 40px; height: auto; }
+        .hdr h1 { font-family: var(--font-display); font-size: 1.8rem; letter-spacing: 2px; color: var(--amber-light); }
+        .hdr-links { margin-left: auto; display: flex; gap: 0.5rem; }
+        .hdr-link { font-size: 0.75rem; color: var(--text-secondary); text-decoration: none; padding: 0.35rem 0.7rem; border: 1px solid var(--glass-border); border-radius: 6px; transition: all 0.2s; }
+        .hdr-link:hover { color: var(--amber-light); border-color: var(--amber-dim); background: var(--amber-dim); }
+        .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+        .stat { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 10px; padding: 1rem; text-align: center; }
+        .stat-val { font-family: var(--font-display); font-size: 2rem; color: var(--amber-light); letter-spacing: 1px; }
+        .stat-lbl { font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
+        .tabs { display: flex; gap: 0; margin-bottom: 1rem; border-bottom: 1px solid var(--glass-border); }
+        .tab { padding: 0.6rem 1.25rem; font-size: 0.82rem; color: var(--text-secondary); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; background: none; border-top: none; border-left: none; border-right: none; font-family: var(--font-body); }
+        .tab:hover { color: var(--text-primary); }
+        .tab.active { color: var(--amber-light); border-bottom-color: var(--amber); }
+        .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+        th { text-align: left; padding: 0.6rem; font-family: var(--font-mono); font-size: 0.6rem; font-weight: 600; color: var(--amber); letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid rgba(212,160,23,0.2); background: rgba(212,160,23,0.04); white-space: nowrap; position: sticky; top: 0; z-index: 2; }
+        td { padding: 0.5rem 0.6rem; color: var(--text-secondary); border-bottom: 1px solid var(--glass-border); vertical-align: top; }
+        tr:hover td { background: rgba(212,160,23,0.03); }
+        .cell-query { color: var(--text-primary); font-weight: 500; max-width: 300px; }
+        .cell-reply { max-width: 400px; }
+        .cell-ip { font-family: var(--font-mono); font-size: 0.7rem; white-space: nowrap; }
+        .cell-time { font-family: var(--font-mono); font-size: 0.7rem; white-space: nowrap; }
+        .cell-ms { font-family: var(--font-mono); font-size: 0.7rem; }
+        .cell-type { font-family: var(--font-mono); font-size: 0.65rem; padding: 0.15rem 0.45rem; border-radius: 4px; display: inline-block; }
+        .type-internal { background: rgba(34,197,94,0.12); color: var(--green); }
+        .type-external { background: rgba(74,124,173,0.15); color: var(--steel); }
+        .type-hybrid { background: var(--amber-dim); color: var(--amber-light); }
+        .cell-rating { font-family: var(--font-mono); font-weight: 700; }
+        .rating-good { color: var(--green); }
+        .rating-mid { color: var(--amber-light); }
+        .rating-bad { color: var(--red); }
+        .cell-comment { max-width: 250px; font-style: italic; color: var(--text-dim); }
+        .cell-ua { max-width: 200px; font-size: 0.65rem; color: var(--text-dim); word-break: break-all; }
+        .truncate { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; cursor: pointer; }
+        .truncate.expanded { -webkit-line-clamp: unset; }
+        .cache-hit { font-family: var(--font-mono); font-size: 0.6rem; padding: 0.1rem 0.35rem; border-radius: 3px; background: rgba(74,124,173,0.15); color: var(--steel); }
+        .empty { text-align: center; padding: 3rem; color: var(--text-dim); font-size: 0.85rem; }
+        .loading { text-align: center; padding: 2rem; color: var(--text-secondary); font-size: 0.8rem; }
+        .refresh-btn { font-family: var(--font-mono); font-size: 0.7rem; padding: 0.35rem 0.7rem; background: var(--amber-dim); color: var(--amber-light); border: 1px solid rgba(212,160,23,0.2); border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+        .refresh-btn:hover { background: var(--amber); color: #000; }
+        .toolbar { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+        .toolbar .count { font-size: 0.75rem; color: var(--text-dim); }
+        @media (max-width: 768px) {
+            .page { padding: 0.75rem; }
+            .hdr h1 { font-size: 1.3rem; }
+            .stats { grid-template-columns: repeat(2, 1fr); }
+            table { font-size: 0.7rem; }
+            th, td { padding: 0.4rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="page">
+    <div class="hdr">
+        <img src="jkr_logo.png" alt="JKR">
+        <h1>LOG & AUDIT TRAIL</h1>
+        <div class="hdr-links">
+            <a href="./" class="hdr-link">Chat</a>
+            <a href="architecture.html" class="hdr-link">Arkitektur</a>
+        </div>
+    </div>
+
+    <div class="stats" id="statsRow">
+        <div class="stat"><div class="stat-val" id="s-conv">-</div><div class="stat-lbl">Perbualan</div></div>
+        <div class="stat"><div class="stat-val" id="s-ips">-</div><div class="stat-lbl">IP Unik</div></div>
+        <div class="stat"><div class="stat-val" id="s-fb">-</div><div class="stat-lbl">Maklum Balas</div></div>
+        <div class="stat"><div class="stat-val" id="s-rating">-</div><div class="stat-lbl">Purata Rating</div></div>
+        <div class="stat"><div class="stat-val" id="s-ms">-</div><div class="stat-lbl">Purata ms</div></div>
+        <div class="stat"><div class="stat-val" id="s-cache">-</div><div class="stat-lbl">Cache Hits</div></div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" data-tab="conversations">Perbualan</button>
+        <button class="tab" data-tab="feedback">Maklum Balas</button>
+    </div>
+
+    <div class="toolbar">
+        <button class="refresh-btn" id="refreshBtn">Muat Semula</button>
+        <span class="count" id="rowCount"></span>
+    </div>
+
+    <div id="convPanel">
+        <div class="tbl-wrap"><table><thead><tr>
+            <th>#</th><th>Masa</th><th>IP</th><th>Soalan</th><th>Jawapan</th><th>Jenis</th><th>Sumber</th><th>Masa (ms)</th><th>Cache</th><th>User Agent</th>
+        </tr></thead><tbody id="convBody"></tbody></table></div>
+        <div class="empty" id="convEmpty" style="display:none;">Tiada rekod perbualan.</div>
+    </div>
+
+    <div id="fbPanel" style="display:none;">
+        <div class="tbl-wrap"><table><thead><tr>
+            <th>#</th><th>Masa</th><th>IP</th><th>Soalan</th><th>Jawapan</th><th>Rating</th><th>Komen</th>
+        </tr></thead><tbody id="fbBody"></tbody></table></div>
+        <div class="empty" id="fbEmpty" style="display:none;">Tiada maklum balas.</div>
+    </div>
+
+    <div class="loading" id="loadingMsg">Memuatkan data...</div>
+</div>
+
+<script>
+(function(){
+    var activeTab = 'conversations';
+    var convData = [];
+    var fbData = [];
+
+    document.querySelectorAll('.tab').forEach(function(t){
+        t.addEventListener('click', function(){
+            document.querySelectorAll('.tab').forEach(function(x){ x.classList.remove('active'); });
+            t.classList.add('active');
+            activeTab = t.getAttribute('data-tab');
+            document.getElementById('convPanel').style.display = activeTab === 'conversations' ? '' : 'none';
+            document.getElementById('fbPanel').style.display = activeTab === 'feedback' ? '' : 'none';
+            updateCount();
+        });
+    });
+
+    function fmtTime(iso) {
+        if (!iso) return '-';
+        try {
+            var d = new Date(iso);
+            var dd = String(d.getDate()).padStart(2,'0');
+            var mm = String(d.getMonth()+1).padStart(2,'0');
+            var hh = String(d.getHours()).padStart(2,'0');
+            var mi = String(d.getMinutes()).padStart(2,'0');
+            var ss = String(d.getSeconds()).padStart(2,'0');
+            return dd+'/'+mm+' '+hh+':'+mi+':'+ss;
+        } catch(e) { return String(iso).slice(0,19); }
+    }
+
+    function typeClass(t) {
+        if (t === 'internal') return 'type-internal';
+        if (t === 'external') return 'type-external';
+        return 'type-hybrid';
+    }
+
+    function ratingClass(r) {
+        r = parseInt(r);
+        if (r >= 4) return 'rating-good';
+        if (r >= 3) return 'rating-mid';
+        return 'rating-bad';
+    }
+
+    function makeCell(text, className) {
+        var td = document.createElement('td');
+        if (className) td.className = className;
+        td.textContent = text || '-';
+        return td;
+    }
+
+    function makeTruncCell(text, className) {
+        var td = document.createElement('td');
+        if (className) td.className = className;
+        var div = document.createElement('div');
+        div.className = 'truncate';
+        div.textContent = text || '';
+        div.addEventListener('click', function(){ div.classList.toggle('expanded'); });
+        td.appendChild(div);
+        return td;
+    }
+
+    function renderConv(rows) {
+        var tbody = document.getElementById('convBody');
+        tbody.textContent = '';
+        if (!rows.length) {
+            document.getElementById('convEmpty').style.display = '';
+            return;
+        }
+        document.getElementById('convEmpty').style.display = 'none';
+
+        rows.forEach(function(r, i){
+            var tr = document.createElement('tr');
+            tr.appendChild(makeCell(String(i + 1)));
+            tr.appendChild(makeCell(fmtTime(r.timestamp), 'cell-time'));
+            tr.appendChild(makeCell(r.client_ip || '-', 'cell-ip'));
+            tr.appendChild(makeTruncCell(r.query, 'cell-query'));
+            tr.appendChild(makeTruncCell(r.reply || r.reply_preview || '', 'cell-reply'));
+
+            var typeTd = document.createElement('td');
+            var typeSpan = document.createElement('span');
+            typeSpan.className = 'cell-type ' + typeClass(r.query_type);
+            typeSpan.textContent = r.query_type || '-';
+            typeTd.appendChild(typeSpan);
+            tr.appendChild(typeTd);
+
+            tr.appendChild(makeCell(r.num_sources || '0'));
+            tr.appendChild(makeCell(r.response_time_ms || '-', 'cell-ms'));
+
+            var cacheTd = document.createElement('td');
+            if (r.cache_hit && String(r.cache_hit).toLowerCase() === 'true') {
+                var cacheSpan = document.createElement('span');
+                cacheSpan.className = 'cache-hit';
+                cacheSpan.textContent = 'CACHE';
+                cacheTd.appendChild(cacheSpan);
+            }
+            tr.appendChild(cacheTd);
+
+            tr.appendChild(makeTruncCell(r.user_agent || '-', 'cell-ua'));
+            tbody.appendChild(tr);
+        });
+    }
+
+    function renderFb(rows) {
+        var tbody = document.getElementById('fbBody');
+        tbody.textContent = '';
+        if (!rows.length) {
+            document.getElementById('fbEmpty').style.display = '';
+            return;
+        }
+        document.getElementById('fbEmpty').style.display = 'none';
+
+        rows.forEach(function(r, i){
+            var tr = document.createElement('tr');
+            tr.appendChild(makeCell(String(i + 1)));
+            tr.appendChild(makeCell(fmtTime(r.timestamp), 'cell-time'));
+            tr.appendChild(makeCell(r.client_ip || '-', 'cell-ip'));
+            tr.appendChild(makeTruncCell(r.query, 'cell-query'));
+            tr.appendChild(makeTruncCell(r.response_preview || '', 'cell-reply'));
+
+            var rating = parseInt(r.rating) || 0;
+            var stars = '';
+            for (var s = 0; s < 5; s++) stars += s < rating ? '\u2605' : '\u2606';
+            var ratingTd = document.createElement('td');
+            ratingTd.className = 'cell-rating ' + ratingClass(rating);
+            ratingTd.textContent = stars + ' ' + rating;
+            tr.appendChild(ratingTd);
+
+            tr.appendChild(makeCell(r.comment || '-', 'cell-comment'));
+            tbody.appendChild(tr);
+        });
+    }
+
+    function updateCount() {
+        var el = document.getElementById('rowCount');
+        if (activeTab === 'conversations') el.textContent = convData.length + ' rekod';
+        else el.textContent = fbData.length + ' rekod';
+    }
+
+    function loadAll() {
+        document.getElementById('loadingMsg').style.display = '';
+
+        Promise.all([
+            fetch('api/admin/conversations').then(function(r){ return r.json(); }),
+            fetch('api/admin/feedback').then(function(r){ return r.json(); }),
+            fetch('api/admin/summary').then(function(r){ return r.json(); })
+        ]).then(function(results){
+            document.getElementById('loadingMsg').style.display = 'none';
+
+            convData = results[0].rows || [];
+            fbData = results[1].rows || [];
+            var summary = results[2];
+
+            document.getElementById('s-conv').textContent = summary.conversations || 0;
+            document.getElementById('s-ips').textContent = summary.unique_ips || 0;
+            document.getElementById('s-fb').textContent = summary.feedback_count || 0;
+            document.getElementById('s-rating').textContent = summary.average_rating || '-';
+            document.getElementById('s-ms').textContent = summary.average_response_ms ? summary.average_response_ms.toLocaleString() : '-';
+            document.getElementById('s-cache').textContent = summary.cache_hits || 0;
+
+            renderConv(convData);
+            renderFb(fbData);
+            updateCount();
+        }).catch(function(e){
+            document.getElementById('loadingMsg').textContent = 'Ralat: ' + e.message;
+        });
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', loadAll);
+    loadAll();
+})();
+</script>
+
+</body>
+</html>

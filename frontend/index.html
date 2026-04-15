@@ -1,0 +1,1965 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JKR FMI — Facility Management Intelligence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-abyss: #060a10;
+            --bg-plate: #0b1018;
+            --bg-raised: #111822;
+            --text-primary: #e8ecf2;
+            --text-secondary: #7a8599;
+            --text-dim: #4a5568;
+            --amber: #d4a017;
+            --amber-light: #e8b923;
+            --amber-hot: #f0c030;
+            --amber-dim: rgba(212,160,23,0.12);
+            --amber-glow: rgba(212,160,23,0.25);
+            --steel: #4a7cad;
+            --steel-dim: rgba(74,124,173,0.10);
+            --steel-border: rgba(74,124,173,0.20);
+            --glass-bg: rgba(11,16,24,0.65);
+            --glass-border: rgba(255,255,255,0.06);
+            --danger: #c0392b;
+            --danger-dim: rgba(192,57,43,0.12);
+            --danger-text: #e87c70;
+            --font-display: 'Bebas Neue', sans-serif;
+            --font-body: 'DM Sans', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --radius-sm: 6px;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-abyss);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        /* === ATMOSPHERE === */
+        .atmos-amber {
+            position: fixed; top: -15%; left: -10%;
+            width: 45vw; height: 45vw;
+            background: radial-gradient(circle, rgba(212,160,23,0.10) 0%, transparent 65%);
+            filter: blur(90px);
+            animation: drift 14s ease-in-out infinite;
+            pointer-events: none; z-index: 0;
+        }
+        .atmos-steel {
+            position: fixed; bottom: -15%; right: -10%;
+            width: 50vw; height: 50vw;
+            background: radial-gradient(circle, rgba(74,124,173,0.07) 0%, transparent 65%);
+            filter: blur(100px);
+            animation: drift 18s ease-in-out infinite reverse;
+            pointer-events: none; z-index: 0;
+        }
+        .blueprint-grid {
+            position: fixed; inset: -40px;
+            background-image:
+                linear-gradient(rgba(74,124,173,0.08) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(74,124,173,0.08) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none; z-index: 1;
+            animation: grid-scroll 30s linear infinite;
+        }
+        @keyframes grid-scroll {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(40px, 40px); }
+        }
+        @keyframes drift {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(20px, -15px) scale(1.05); }
+        }
+
+        /* === MAIN SHELL === */
+        .shell {
+            position: relative; z-index: 1;
+            width: 100%; height: 100%;
+            padding: 1.25rem;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        .command-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            width: 100%; height: 100%;
+            display: flex; gap: 0;
+            box-shadow:
+                0 0 0 1px rgba(212,160,23,0.04),
+                0 40px 80px -20px rgba(0,0,0,0.7),
+                inset 0 1px 0 rgba(255,255,255,0.03);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* top edge highlight */
+        .command-card::before {
+            content: '';
+            position: absolute; top: 0; left: 5%; right: 5%; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--amber-dim), rgba(212,160,23,0.15), var(--amber-dim), transparent);
+            z-index: 3;
+        }
+
+        /* === LEFT PANEL === */
+        .panel-left {
+            flex: 0 0 380px;
+            max-width: 380px;
+            display: flex; flex-direction: column;
+            padding: 2.25rem 2rem 1.75rem;
+            border-right: 1px solid var(--glass-border);
+            overflow-y: auto;
+            position: relative;
+            z-index: 2;
+        }
+        .panel-left::-webkit-scrollbar { width: 3px; }
+        .panel-left::-webkit-scrollbar-thumb { background: rgba(212,160,23,0.2); border-radius: 2px; }
+
+        /* Corner tag */
+        .corner-tag {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            font-weight: 600;
+            color: var(--amber);
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            margin-bottom: 1.25rem;
+            display: flex; align-items: center; gap: 0.6rem;
+        }
+        .corner-tag::before {
+            content: '';
+            width: 18px; height: 2px;
+            background: var(--amber);
+        }
+
+        /* Title */
+        .panel-title {
+            font-family: var(--font-display);
+            font-size: 4.5rem;
+            line-height: 0.9;
+            letter-spacing: 3px;
+            margin-bottom: 0.15rem;
+            background: linear-gradient(160deg, #ffffff 20%, var(--amber-light) 60%, var(--amber) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .panel-subtitle {
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+            margin-bottom: 1.75rem;
+            line-height: 1.5;
+        }
+
+        /* Spec cards */
+        .spec-cards { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.25rem; }
+
+        .spec-card {
+            display: flex; gap: 0.85rem; align-items: flex-start;
+            padding: 0.8rem 0.9rem;
+            background: var(--steel-dim);
+            border: 1px solid var(--steel-border);
+            border-left: 3px solid var(--amber);
+            border-radius: 2px var(--radius-sm) var(--radius-sm) 2px;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .spec-card:hover {
+            background: rgba(74,124,173,0.15);
+            border-left-color: var(--amber-light);
+        }
+        .spec-icon {
+            flex-shrink: 0;
+            width: 28px; height: 28px;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--amber);
+        }
+        .spec-icon svg { width: 20px; height: 20px; }
+        .spec-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--amber-light);
+            margin-bottom: 0.2rem;
+        }
+        .spec-desc {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            line-height: 1.45;
+        }
+
+        /* Disclaimer */
+        .disclaimer {
+            display: flex; gap: 0.7rem; align-items: flex-start;
+            padding: 0.75rem 0.85rem;
+            background: var(--danger-dim);
+            border: 1px solid rgba(192,57,43,0.25);
+            border-radius: var(--radius-sm);
+            margin-bottom: 1.25rem;
+        }
+        .disclaimer-icon { flex-shrink: 0; color: var(--danger-text); width: 18px; height: 18px; margin-top: 1px; }
+        .disclaimer-icon svg { width: 18px; height: 18px; }
+        .disclaimer-text { font-size: 0.68rem; color: var(--danger-text); line-height: 1.5; }
+        .disclaimer-text strong { color: #f09080; }
+
+        /* Footer org */
+        .org-footer {
+            margin-top: auto;
+            padding: 0.9rem;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-sm);
+        }
+        .org-label {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 0.35rem;
+        }
+        .org-name {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        .org-link {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            padding: 0.4rem 0.7rem;
+            background: var(--amber-dim);
+            border: 1px solid rgba(212,160,23,0.25);
+            border-radius: var(--radius-sm);
+            color: var(--amber-light);
+            text-decoration: none;
+            font-size: 0.72rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .org-link:hover { background: var(--amber-glow); transform: translateX(3px); }
+        .org-link svg { width: 14px; height: 14px; }
+
+        .collab-strip {
+            margin-top: 0.7rem;
+            padding: 0.45rem 0.65rem;
+            background: linear-gradient(135deg, var(--amber-dim) 0%, var(--steel-dim) 100%);
+            border: 1px solid rgba(212,160,23,0.15);
+            border-radius: var(--radius-sm);
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+        .collab-strip svg { width: 14px; height: 14px; color: var(--amber); flex-shrink: 0; }
+        .collab-text { font-size: 0.62rem; color: var(--text-secondary); line-height: 1.35; }
+        .collab-text span { color: var(--amber-light); font-weight: 600; }
+
+        /* === RIGHT PANEL (CHAT) === */
+        .panel-right {
+            flex: 1 1 auto;
+            min-width: 0;
+            display: flex; flex-direction: column;
+            z-index: 2;
+        }
+
+        .chat-chrome {
+            display: flex; flex-direction: column;
+            height: 100%;
+            background: rgba(0,0,0,0.25);
+            overflow: hidden;
+        }
+
+        /* Chat header */
+        .chat-head {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex; align-items: center; gap: 0.75rem;
+            background: rgba(212,160,23,0.04);
+            flex-shrink: 0;
+        }
+        .chat-head-badge {
+            width: 38px; height: 38px;
+            background: var(--amber);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-family: var(--font-display);
+            font-size: 1rem;
+            color: #000;
+            letter-spacing: 1px;
+            font-weight: 700;
+            box-shadow: 0 2px 12px rgba(212,160,23,0.3);
+        }
+        .chat-head-info h2 {
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+        .chat-head-status {
+            font-size: 0.7rem;
+            color: var(--amber-light);
+            display: flex; align-items: center; gap: 5px;
+        }
+        .chat-head-status::before {
+            content: '';
+            width: 7px; height: 7px;
+            background: #22c55e;
+            border-radius: 50%;
+            box-shadow: 0 0 6px rgba(34,197,94,0.5);
+        }
+        .chat-head-actions { margin-left: auto; }
+        .btn-clear {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            padding: 0.4rem 0.75rem;
+            background: rgba(192,57,43,0.15);
+            border: 1px solid rgba(192,57,43,0.3);
+            border-radius: var(--radius-sm);
+            color: var(--danger-text);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-clear:hover { background: rgba(192,57,43,0.25); color: #f09080; }
+
+        /* Chat body */
+        .chat-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            display: flex; flex-direction: column; gap: 1rem;
+            scroll-behavior: smooth;
+        }
+        .chat-body::-webkit-scrollbar { width: 5px; }
+        .chat-body::-webkit-scrollbar-thumb { background: rgba(212,160,23,0.15); border-radius: 3px; }
+
+        /* Welcome */
+        .welcome-block {
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            text-align: center;
+            padding: 2rem 1rem;
+            flex: 1;
+        }
+        .welcome-sigil {
+            width: 56px; height: 56px;
+            background: var(--amber-dim);
+            border: 1px solid rgba(212,160,23,0.25);
+            border-radius: 14px;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 1.25rem;
+        }
+        .welcome-sigil svg { width: 28px; height: 28px; color: var(--amber); }
+        .welcome-title {
+            font-family: var(--font-display);
+            font-size: 1.6rem;
+            letter-spacing: 2px;
+            margin-bottom: 0.4rem;
+        }
+        .welcome-desc {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            max-width: 480px;
+            line-height: 1.6;
+            margin-bottom: 1.75rem;
+        }
+        .chip-row {
+            display: flex; flex-wrap: wrap; gap: 0.4rem;
+            justify-content: center; max-width: 560px;
+        }
+        .chip {
+            font-family: var(--font-body);
+            font-size: 0.72rem;
+            padding: 0.45rem 0.9rem;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.25s;
+        }
+        .chip:hover {
+            border-color: var(--amber);
+            color: var(--amber-light);
+            background: var(--amber-dim);
+        }
+
+        /* Messages */
+        .msg { max-width: 82%; animation: msgIn 0.3s ease; }
+        @keyframes msgIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .msg.user { align-self: flex-end; }
+        .msg.bot { align-self: flex-start; }
+
+        .bubble {
+            padding: 0.85rem 1.1rem;
+            border-radius: 14px;
+            font-size: 0.85rem;
+            line-height: 1.7;
+            word-break: break-word;
+        }
+        .msg.user .bubble {
+            background: linear-gradient(135deg, rgba(212,160,23,0.20), rgba(212,160,23,0.10));
+            border: 1px solid rgba(212,160,23,0.20);
+            border-bottom-right-radius: 3px;
+            color: var(--text-primary);
+        }
+        .msg.bot .bubble {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--glass-border);
+            border-bottom-left-radius: 3px;
+        }
+        .bubble p { margin-bottom: 0.55rem; }
+        .bubble p:last-child { margin-bottom: 0; }
+        .bubble strong { color: var(--amber-light); font-weight: 600; }
+        .bubble em { color: var(--text-secondary); font-style: italic; }
+        .bubble code {
+            font-family: var(--font-mono);
+            font-size: 0.76rem;
+            background: rgba(212,160,23,0.08);
+            border: 1px solid rgba(212,160,23,0.12);
+            padding: 0.12rem 0.4rem;
+            border-radius: 4px;
+            color: var(--amber-light);
+        }
+        .bubble ul, .bubble ol { padding-left: 1.15rem; margin-bottom: 0.55rem; }
+        .bubble ol { counter-reset: li; list-style: none; padding-left: 0; }
+        .bubble ol li {
+            counter-increment: li;
+            padding-left: 1.8rem;
+            position: relative;
+            margin-bottom: 0.4rem;
+        }
+        .bubble ol li::before {
+            content: counter(li);
+            position: absolute; left: 0; top: 0.05rem;
+            width: 1.3rem; height: 1.3rem;
+            background: var(--amber-dim);
+            border: 1px solid rgba(212,160,23,0.25);
+            border-radius: 50%;
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            font-weight: 700;
+            color: var(--amber-light);
+            display: flex; align-items: center; justify-content: center;
+            line-height: 1;
+        }
+        .bubble ul { list-style: none; padding-left: 0; }
+        .bubble ul li {
+            padding-left: 1.2rem;
+            position: relative;
+            margin-bottom: 0.35rem;
+        }
+        .bubble ul li::before {
+            content: '';
+            position: absolute; left: 0.15rem; top: 0.55rem;
+            width: 5px; height: 5px;
+            background: var(--amber);
+            border-radius: 50%;
+            box-shadow: 0 0 6px rgba(212,160,23,0.3);
+        }
+        .bubble li { margin-bottom: 0.3rem; }
+        .bubble a { color: var(--amber-light); text-decoration: underline; text-underline-offset: 2px; word-break: break-all; }
+        .bubble a:hover { color: var(--amber-hot); }
+
+        /* Headings inside bubble */
+        .bubble h2 {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            letter-spacing: 1.5px;
+            color: #fff;
+            margin: 0.8rem 0 0.4rem;
+            padding-bottom: 0.35rem;
+            border-bottom: 1px solid rgba(212,160,23,0.2);
+        }
+        .bubble h2:first-child { margin-top: 0; }
+        .bubble h3 {
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--amber-light);
+            margin: 0.7rem 0 0.3rem;
+            display: flex; align-items: center; gap: 0.4rem;
+        }
+        .bubble h3::before {
+            content: '';
+            width: 12px; height: 2px;
+            background: var(--amber);
+            flex-shrink: 0;
+        }
+        .bubble h3:first-child { margin-top: 0; }
+
+        /* Code blocks */
+        .code-block {
+            position: relative;
+            margin: 0.6rem 0;
+            background: rgba(0,0,0,0.45);
+            border: 1px solid rgba(74,124,173,0.20);
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+        }
+        .code-block-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0.35rem 0.7rem;
+            background: rgba(74,124,173,0.08);
+            border-bottom: 1px solid rgba(74,124,173,0.15);
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            color: var(--steel);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+        .code-block-copy {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            background: none; border: 1px solid rgba(74,124,173,0.25);
+            color: var(--steel);
+            padding: 0.15rem 0.45rem;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .code-block-copy:hover { background: rgba(74,124,173,0.15); color: var(--amber-light); }
+        .code-block pre {
+            margin: 0;
+            padding: 0.65rem 0.8rem;
+            overflow-x: auto;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            line-height: 1.55;
+            color: var(--text-primary);
+        }
+        .code-block pre::-webkit-scrollbar { height: 3px; }
+        .code-block pre::-webkit-scrollbar-thumb { background: rgba(74,124,173,0.2); border-radius: 2px; }
+
+        /* Blockquotes */
+        .bubble blockquote {
+            margin: 0.5rem 0;
+            padding: 0.6rem 0.9rem;
+            background: rgba(212,160,23,0.05);
+            border-left: 3px solid var(--amber);
+            border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+            color: var(--text-secondary);
+            font-style: italic;
+            font-size: 0.82rem;
+        }
+        .bubble blockquote p { margin-bottom: 0; }
+
+        /* Tables */
+        .bubble .md-table-wrap {
+            margin: 0.5rem 0;
+            overflow-x: auto;
+            border-radius: var(--radius-sm);
+            border: 1px solid rgba(74,124,173,0.20);
+        }
+        .bubble .md-table-wrap::-webkit-scrollbar { height: 3px; }
+        .bubble .md-table-wrap::-webkit-scrollbar-thumb { background: rgba(74,124,173,0.2); border-radius: 2px; }
+        .bubble table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.78rem;
+        }
+        .bubble table th {
+            background: rgba(74,124,173,0.12);
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: var(--amber-light);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            padding: 0.5rem 0.7rem;
+            text-align: left;
+            border-bottom: 2px solid rgba(212,160,23,0.2);
+        }
+        .bubble table td {
+            padding: 0.4rem 0.7rem;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            color: var(--text-primary);
+        }
+        .bubble table tr:last-child td { border-bottom: none; }
+        .bubble table tr:hover td { background: rgba(212,160,23,0.04); }
+
+        /* Horizontal rules */
+        .bubble hr {
+            border: none;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(212,160,23,0.3), transparent);
+            margin: 0.75rem 0;
+        }
+
+        /* Retrieval */
+        .ret-toggle {
+            display: inline-flex; align-items: center; gap: 0.35rem;
+            margin-top: 0.6rem;
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            font-weight: 600;
+            color: var(--steel);
+            cursor: pointer;
+            padding: 0.35rem 0.65rem;
+            border-radius: var(--radius-sm);
+            background: var(--steel-dim);
+            border: 1px solid var(--steel-border);
+            transition: all 0.2s;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+        }
+        .ret-toggle:hover { color: var(--amber); border-color: rgba(212,160,23,0.25); background: var(--amber-dim); }
+        .ret-toggle svg { width: 12px; height: 12px; flex-shrink: 0; }
+        .ret-list {
+            display: none;
+            margin-top: 0.5rem;
+            padding: 0;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+        }
+        .ret-list.open { display: block; }
+        .ret-item {
+            padding: 0.6rem 0.75rem;
+            font-size: 0.68rem;
+            color: var(--text-secondary);
+            background: rgba(0,0,0,0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            border-left: 3px solid var(--steel-border);
+            transition: border-color 0.2s;
+        }
+        .ret-item:hover { border-left-color: var(--amber); }
+        .ret-item:last-child { border-bottom: none; }
+        .ret-head {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 0.3rem;
+        }
+        .ret-fn {
+            color: var(--amber); font-weight: 600;
+            font-family: var(--font-mono); font-size: 0.62rem;
+            letter-spacing: 0.3px;
+        }
+        .ret-sc {
+            font-family: var(--font-mono); font-size: 0.58rem;
+            color: var(--text-dim);
+        }
+        .ret-snippet {
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            line-height: 1.5;
+            padding: 0.4rem 0.55rem;
+            background: rgba(0,0,0,0.25);
+            border-radius: 4px;
+            border-left: 2px solid rgba(212,160,23,0.15);
+            max-height: 60px;
+            overflow: hidden;
+            transition: max-height 0.3s;
+            cursor: pointer;
+        }
+        .ret-snippet:hover { max-height: 200px; color: var(--text-secondary); }
+        .ret-chunk-tag {
+            font-family: var(--font-mono);
+            font-size: 0.5rem;
+            color: var(--text-dim);
+            margin-top: 0.25rem;
+            opacity: 0.6;
+        }
+
+        /* Feedback + actions toolbar */
+        .msg-actions {
+            display: flex; align-items: center; gap: 0.15rem;
+            margin-top: 0.45rem;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .msg.bot:hover .msg-actions,
+        .msg-actions.visible { opacity: 1; }
+        .act-btn {
+            display: flex; align-items: center; justify-content: center;
+            width: 28px; height: 28px;
+            background: none;
+            border: 1px solid transparent;
+            border-radius: 6px;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.15s;
+            position: relative;
+        }
+        .act-btn:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: var(--glass-border);
+            color: var(--text-secondary);
+        }
+        .act-btn svg { width: 15px; height: 15px; }
+        .act-btn.active-up {
+            color: #22c55e;
+            background: rgba(34,197,94,0.08);
+            border-color: rgba(34,197,94,0.20);
+        }
+        .act-btn.active-down {
+            color: var(--danger-text);
+            background: var(--danger-dim);
+            border-color: rgba(192,57,43,0.25);
+        }
+        .act-btn.playing {
+            color: var(--amber);
+            background: var(--amber-dim);
+            border-color: rgba(212,160,23,0.25);
+        }
+        .act-divider {
+            width: 1px; height: 16px;
+            background: var(--glass-border);
+            margin: 0 0.2rem;
+        }
+        /* Tooltip */
+        .act-btn[data-tip]::after {
+            content: attr(data-tip);
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%) scale(0.9);
+            font-family: var(--font-body);
+            font-size: 0.62rem;
+            color: var(--text-primary);
+            background: var(--bg-raised);
+            border: 1px solid var(--glass-border);
+            padding: 0.25rem 0.5rem;
+            border-radius: 5px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s, transform 0.15s;
+        }
+        .act-btn[data-tip]:hover::after {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+        }
+        /* Comment form */
+        .fb-comment-form {
+            display: none;
+            margin-top: 0.4rem;
+            animation: msgIn 0.2s ease;
+        }
+        .fb-comment-form.open { display: flex; gap: 0.4rem; align-items: flex-end; }
+        .fb-comment-input {
+            flex: 1;
+            font-family: var(--font-body);
+            font-size: 0.75rem;
+            color: var(--text-primary);
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 0.45rem 0.7rem;
+            outline: none;
+            resize: none;
+            min-height: 34px;
+            max-height: 80px;
+            transition: border-color 0.2s;
+        }
+        .fb-comment-input:focus { border-color: var(--amber); }
+        .fb-comment-input::placeholder { color: var(--text-dim); }
+        .fb-comment-send {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            background: var(--amber-dim);
+            border: 1px solid rgba(212,160,23,0.25);
+            border-radius: 6px;
+            color: var(--amber-light);
+            padding: 0.4rem 0.65rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            flex-shrink: 0;
+        }
+        .fb-comment-send:hover { background: var(--amber-glow); }
+        .fb-sent {
+            font-size: 0.65rem;
+            color: #22c55e;
+            margin-top: 0.3rem;
+            animation: msgIn 0.2s ease;
+        }
+
+        /* Typing */
+        .typing-dots { display: flex; gap: 5px; padding: 0.6rem 0; }
+        .typing-dots span {
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: var(--amber);
+            animation: pulse 1.4s infinite;
+        }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes pulse {
+            0%, 60%, 100% { opacity: 0.15; transform: scale(0.8); }
+            30% { opacity: 1; transform: scale(1); }
+        }
+
+        /* Input */
+        .chat-input-area {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.15);
+            flex-shrink: 0;
+        }
+        .input-row {
+            display: flex; gap: 0.5rem; align-items: flex-end;
+        }
+        .input-row textarea {
+            flex: 1;
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 0.7rem 1rem;
+            resize: none;
+            min-height: 44px;
+            max-height: 140px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .input-row textarea:focus { border-color: var(--amber); }
+        .input-row textarea::placeholder { color: var(--text-dim); }
+
+        .btn-send {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            background: var(--amber);
+            color: #000;
+            border: none;
+            border-radius: 10px;
+            padding: 0.65rem 1.2rem;
+            cursor: pointer;
+            display: flex; align-items: center; gap: 0.4rem;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            box-shadow: 0 2px 12px rgba(212,160,23,0.2);
+        }
+        .btn-send:hover { background: var(--amber-hot); box-shadow: 0 4px 20px rgba(212,160,23,0.35); }
+        .btn-send:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
+        .btn-send svg { width: 14px; height: 14px; }
+
+        .input-hint {
+            font-family: var(--font-mono);
+            text-align: center;
+            font-size: 0.58rem;
+            color: var(--text-dim);
+            letter-spacing: 0.5px;
+            margin-top: 0.5rem;
+        }
+
+        /* Self-eval */
+        .eval-card {
+            margin-top: 0.6rem;
+            padding: 0.65rem 0.8rem;
+            background: rgba(212,160,23,0.06);
+            border: 1px solid rgba(212,160,23,0.15);
+            border-radius: var(--radius-sm);
+        }
+        .eval-title {
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            font-weight: 600;
+            color: var(--amber);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+        .eval-row {
+            display: flex; align-items: center; gap: 0.5rem;
+            margin-bottom: 0.35rem;
+        }
+        .eval-label {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+            width: 55px; flex-shrink: 0;
+        }
+        .eval-bar-bg {
+            flex: 1; height: 6px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 3px; overflow: hidden;
+        }
+        .eval-bar-fill {
+            height: 100%; border-radius: 3px;
+            background: linear-gradient(90deg, #c0392b, var(--amber), #22c55e);
+            transition: width 0.6s ease;
+        }
+        .eval-score {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            width: 24px; text-align: right;
+        }
+        .eval-summary {
+            margin-top: 0.4rem;
+            font-size: 0.62rem;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        /* Follow-up chips */
+        .followup-section {
+            margin-top: 0.5rem;
+        }
+        .followup-label {
+            font-family: var(--font-mono);
+            font-size: 0.55rem;
+            color: var(--amber);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 0.35rem;
+        }
+        .followup-chips {
+            display: flex; flex-wrap: wrap; gap: 0.3rem;
+        }
+        .followup-chip {
+            font-family: var(--font-body);
+            font-size: 0.68rem;
+            padding: 0.35rem 0.7rem;
+            background: rgba(212,160,23,0.08);
+            border: 1px solid rgba(212,160,23,0.20);
+            border-radius: 16px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .followup-chip:hover {
+            border-color: var(--amber);
+            color: var(--amber-light);
+            background: var(--amber-dim);
+        }
+
+        /* Voice buttons */
+        .btn-mic {
+            background: none;
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 0.6rem;
+            color: var(--text-dim);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .btn-mic:hover { border-color: var(--amber); color: var(--amber); }
+        .btn-mic.recording {
+            border-color: #c0392b;
+            color: #c0392b;
+            animation: mic-pulse 1s infinite;
+        }
+        .btn-mic svg { width: 18px; height: 18px; }
+        @keyframes mic-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(192,57,43,0.3); }
+            50% { box-shadow: 0 0 0 6px rgba(192,57,43,0); }
+        }
+        /* (TTS button is now inside .act-btn toolbar) */
+
+        /* === RESPONSIVE === */
+        @media (max-width: 1024px) {
+            html, body { height: 100dvh; }
+            .shell { padding: 0; height: 100dvh; }
+            .command-card {
+                flex-direction: column;
+                border-radius: 0;
+                gap: 0;
+            }
+            .command-card::before { display: none; }
+            .panel-left {
+                flex: 0 0 auto;
+                max-width: 100%;
+                border-right: none;
+                border-bottom: 1px solid var(--glass-border);
+                padding: 0.6rem 1.25rem;
+                overflow-y: visible;
+                text-align: center;
+                align-items: center;
+                flex-direction: row;
+                justify-content: center;
+                gap: 0.75rem;
+            }
+            .panel-left > img { width: 36px !important; margin-bottom: 0 !important; }
+            .corner-tag { display: none; }
+            .panel-title { font-size: 1.4rem; margin: 0; }
+            .panel-subtitle { display: none; }
+            .spec-cards { display: none; }
+            .disclaimer { display: none; }
+            .org-footer { display: none; }
+            .panel-right { flex: 1 1 0; min-height: 0; }
+            .chat-head { padding: 0.5rem 1rem; }
+            .chat-head img { width: 28px !important; }
+            .chat-body { padding: 1rem; }
+            .chat-input-area { padding: 0.75rem 1rem; }
+            .msg { max-width: 90%; }
+            .chip { font-size: 0.66rem; padding: 0.35rem 0.7rem; }
+        }
+
+        @media (max-width: 480px) {
+            .panel-left { padding: 0.5rem 1rem; }
+            .panel-left > img { width: 28px !important; }
+            .panel-title { font-size: 1.2rem; }
+            .chat-head { padding: 0.4rem 0.75rem; }
+            .chat-head img { width: 24px !important; }
+            .bubble { font-size: 0.82rem; padding: 0.75rem 0.9rem; }
+        }
+
+        /* Streaming cursor */
+        .bubble.streaming::after {
+            content: '';
+            display: inline-block;
+            width: 2px; height: 1em;
+            background: var(--amber);
+            margin-left: 2px;
+            vertical-align: text-bottom;
+            animation: blink-cursor 0.8s step-end infinite;
+        }
+        @keyframes blink-cursor {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* === LOAD ANIMATION === */
+        .panel-left > * {
+            opacity: 0;
+            transform: translateY(12px);
+            animation: stagger-in 0.5s ease forwards;
+        }
+        .panel-left > *:nth-child(1) { animation-delay: 0.1s; }
+        .panel-left > *:nth-child(2) { animation-delay: 0.18s; }
+        .panel-left > *:nth-child(3) { animation-delay: 0.26s; }
+        .panel-left > *:nth-child(4) { animation-delay: 0.34s; }
+        .panel-left > *:nth-child(5) { animation-delay: 0.42s; }
+        .panel-left > *:nth-child(6) { animation-delay: 0.50s; }
+        @keyframes stagger-in {
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="atmos-amber"></div>
+    <div class="atmos-steel"></div>
+    <div class="blueprint-grid"></div>
+
+    <main class="shell">
+        <div class="command-card">
+
+            <!-- LEFT PANEL -->
+            <div class="panel-left">
+                <div class="corner-tag">Facility Management Intelligence</div>
+
+                <img src="jkr_logo.png" alt="JKR Logo" style="width:72px; height:auto; margin-bottom:0.6rem; filter: drop-shadow(0 2px 8px rgba(212,160,23,0.25));">
+                <div class="panel-title">JKR FMI</div>
+                <div class="panel-subtitle">Spesifikasi Teknikal Pengurusan<br>Fasiliti Bangunan &amp; Penyelenggaraan</div>
+
+                <div class="spec-cards">
+                    <div class="spec-card">
+                        <div class="spec-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                                <polyline points="9 22 9 12 15 12 15 22"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="spec-label">Pengurusan Fasiliti</div>
+                            <div class="spec-desc">Spesifikasi teknikal pengurusan fasiliti bangunan, pelan pengurusan dan piawaian kualiti.</div>
+                        </div>
+                    </div>
+
+                    <div class="spec-card">
+                        <div class="spec-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="spec-label">Penyelenggaraan Teknikal</div>
+                            <div class="spec-desc">Mekanikal, elektrikal, sivil, senibina dan perkhidmatan sokongan bangunan.</div>
+                        </div>
+                    </div>
+
+                    <div class="spec-card">
+                        <div class="spec-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="spec-label">HSE &amp; Keselamatan</div>
+                            <div class="spec-desc">Keselamatan, kesihatan, alam sekitar dan pengurusan risiko fasiliti.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="disclaimer">
+                    <div class="disclaimer-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                    </div>
+                    <div class="disclaimer-text">
+                        <strong>Penilaian dalaman sahaja.</strong> Jawapan berdasarkan dokumen Technical Specification for Building Facility Management &amp; Maintenance.
+                        Untuk perkara kontrak, sila rujuk pegawai JKR.
+                    </div>
+                </div>
+
+                <a href="architecture.html" class="org-link" style="margin-bottom:0.5rem;">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 9V7h-2V5a2 2 0 00-2-2H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-2h2v-2h-2v-2h2v-2h-2V9h2zM18 19H4V5h14v14zM6 13h5v4H6v-4zm6-6h4v3h-4V7zM6 7h5v5H6V7zm6 4h4v6h-4v-6z"/></svg>
+                    Arkitektur Sistem
+                </a>
+                <a href="admin.html" class="org-link" style="margin-bottom:0.75rem;">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z"/></svg>
+                    Log & Audit
+                </a>
+
+                <div class="org-footer">
+                    <div class="org-label">Dihasilkan oleh <a href="https://pendakwah.tech" target="_blank" rel="noopener noreferrer" style="color:var(--amber-light); text-decoration:none; font-weight:600;">Pendakwah Teknologi</a></div>
+                </div>
+            </div>
+
+            <!-- RIGHT PANEL -->
+            <div class="panel-right">
+                <div class="chat-chrome">
+                    <div class="chat-head">
+                        <img src="jkr_logo.png" alt="JKR" style="width:38px; height:auto; border-radius:8px;">
+                        <div class="chat-head-info">
+                            <div class="chat-head-status">Aktif</div>
+                        </div>
+                        <div class="chat-head-actions">
+                            <button class="btn-clear" id="clearBtn">Padam</button>
+                        </div>
+                    </div>
+
+                    <div class="chat-body" id="chatBody">
+                        <div class="welcome-block" id="welcome">
+                            <img src="jkr_logo.png" alt="JKR" style="width:56px; height:auto; margin-bottom:1.25rem; filter: drop-shadow(0 2px 12px rgba(212,160,23,0.3));">
+                            <div class="welcome-title">FACILITY MANAGEMENT INTELLIGENCE</div>
+                            <div class="welcome-desc">Tanya apa sahaja berkaitan spesifikasi teknikal pengurusan fasiliti bangunan dan penyelenggaraan berdasarkan dokumen rasmi JKR.</div>
+                            <div class="chip-row">
+                                <button class="chip" onclick="askChip(this)">Apakah skop perkhidmatan FMM?</button>
+                                <button class="chip" onclick="askChip(this)">Keperluan kakitangan penyelenggaraan</button>
+                                <button class="chip" onclick="askChip(this)">Jadual penyelenggaraan mekanikal</button>
+                                <button class="chip" onclick="askChip(this)">Pengurusan tenaga bangunan</button>
+                                <button class="chip" onclick="askChip(this)">Prosedur peralihan fasiliti</button>
+                                <button class="chip" onclick="askChip(this)">Keperluan HSE untuk kontraktor</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chat-input-area">
+                        <div class="input-row">
+                            <button class="btn-mic" id="micBtn" onclick="toggleMic()" title="Rakam suara">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+                                </svg>
+                            </button>
+                            <textarea id="qInput" placeholder="Taip soalan anda..." rows="1"
+                                      onkeydown="handleKey(event)" oninput="autoGrow(this)"></textarea>
+                            <button class="btn-send" id="sendBtn" onclick="send()">
+                                <span>Hantar</span>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="input-hint">MTAI Qwen3.5-122B &middot; Mesolitica Embeddings &middot; ChromaDB Hybrid Search</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+    /*
+     * JKR AI — Chat Engine
+     * Renders markdown from trusted backend only.
+     * All content is HTML-escaped before transformation.
+     */
+    (function() {
+        'use strict';
+
+        var chatBody = document.getElementById('chatBody');
+        var qInput   = document.getElementById('qInput');
+        var sendBtn  = document.getElementById('sendBtn');
+        var clearBtn = document.getElementById('clearBtn');
+        var welcome  = document.getElementById('welcome');
+
+        var history = [];
+        var feedback = {};
+        var msgSeq = 0;
+
+        // --- Persistence ---
+        function load() {
+            try {
+                var h = localStorage.getItem('jkr_ai_history');
+                if (h) history = JSON.parse(h);
+                var f = localStorage.getItem('jkr_ai_feedback');
+                if (f) feedback = JSON.parse(f);
+            } catch(e) {}
+        }
+        function saveHistory() {
+            try { localStorage.setItem('jkr_ai_history', JSON.stringify(history.slice(-50))); } catch(e) {}
+        }
+        function saveFeedback() {
+            try { localStorage.setItem('jkr_ai_feedback', JSON.stringify(feedback)); } catch(e) {}
+        }
+
+        // --- Helpers ---
+        function genId() { return 'jkr_' + Date.now() + '_' + (++msgSeq); }
+        function timeStr() { return new Date().toLocaleTimeString('ms-MY', {hour:'2-digit',minute:'2-digit'}); }
+
+        function escapeHtml(t) {
+            var d = document.createElement('div');
+            d.appendChild(document.createTextNode(t));
+            return d.innerHTML;
+        }
+
+        function autoGrow(el) {
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+        }
+        function handleKey(e) {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+        }
+        function askChip(el) { qInput.value = el.textContent; send(); }
+
+        // --- Markdown renderer (trusted backend content only) ---
+        // NOTE: This renderer only processes content from our own backend API.
+        // All text is HTML-escaped via escapeHtml() before any transformation.
+        // Code blocks and tables are extracted pre-escape, their content is
+        // individually escaped, and reassembled into safe markup.
+        var codeBlockId = 0;
+        function renderMd(text, container) {
+            // Extract fenced code blocks first (before escaping)
+            var codeBlocks = [];
+            var processed = text.replace(/```(\w*)\n([\s\S]*?)```/g, function(_, lang, code) {
+                var idx = codeBlocks.length;
+                codeBlocks.push({lang: lang || '', code: code.replace(/\n$/, '')});
+                return '\n%%CODEBLOCK_' + idx + '%%\n';
+            });
+
+            // Extract tables before escaping
+            var tables = [];
+            processed = processed.replace(/(?:^|\n)(\|.+\|)\n(\|[\s:-]+\|)\n((?:\|.+\|\n?)+)/g, function(_, header, sep, body) {
+                var idx = tables.length;
+                tables.push({header: header, body: body.replace(/\n$/, '')});
+                return '\n%%TABLE_' + idx + '%%\n';
+            });
+
+            var esc = escapeHtml(processed);
+            var html = esc
+                // Bold & italic
+                .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.+?)\*/g, '<em>$1</em>')
+                // Inline code
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                // Markdown links
+                .replace(/\[([^\]]+)\]\(([^)]+)\)/g, function(_, label, url) {
+                    if (/^https?:\/\//.test(url)) {
+                        return '<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + label + '</a>';
+                    }
+                    return label;
+                })
+                // Raw URLs (not already inside an href or anchor tag)
+                .replace(/(^|[^"'>])(https?:\/\/[^\s<),]+)/g, function(_, before, url) {
+                    var clean = url.replace(/[.)]+$/, '');
+                    var trail = url.slice(clean.length);
+                    var display = clean.replace(/^https?:\/\//, '').slice(0, 50);
+                    if (display.length < clean.replace(/^https?:\/\//, '').length) display += '...';
+                    return before + '<a href="' + clean + '" target="_blank" rel="noopener noreferrer">' + display + '</a>' + trail;
+                })
+                // Horizontal rules
+                .replace(/^---+$/gm, '<hr>')
+                // Headings (use actual tags)
+                .replace(/^### (.+)$/gm, '</p><h3>$1</h3><p>')
+                .replace(/^## (.+)$/gm, '</p><h2>$1</h2><p>')
+                // Blockquotes
+                .replace(/(?:^|\n)&gt; (.+?)(?=\n(?!&gt;)|$)/g, '</p><blockquote><p>$1</p></blockquote><p>')
+                // Ordered list items
+                .replace(/^\s*(\d+)\. (.+)$/gm, '<oli>$2</oli>')
+                // Unordered list items
+                .replace(/^\s*[-*] (.+)$/gm, '<uli>$1</uli>')
+                // Paragraphs
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\n/g, '<br>');
+
+            // Wrap consecutive <uli> into <ul>
+            html = html.replace(/(<uli>[\s\S]*?<\/uli>(?:<br>)?)+/g, function(m) {
+                return '<ul>' + m.replace(/<br>/g,'').replace(/<\/?uli>/g, function(t) {
+                    return t === '<uli>' ? '<li>' : '</li>';
+                }) + '</ul>';
+            });
+            // Wrap consecutive <oli> into <ol>
+            html = html.replace(/(<oli>[\s\S]*?<\/oli>(?:<br>)?)+/g, function(m) {
+                return '<ol>' + m.replace(/<br>/g,'').replace(/<\/?oli>/g, function(t) {
+                    return t === '<oli>' ? '<li>' : '</li>';
+                }) + '</ol>';
+            });
+
+            // Restore code blocks — each piece is individually escaped
+            html = html.replace(/%%CODEBLOCK_(\d+)%%/g, function(_, idx) {
+                var cb = codeBlocks[parseInt(idx)];
+                var cbId = 'cb_' + (++codeBlockId);
+                var langLabel = cb.lang || 'code';
+                return '</p><div class="code-block"><div class="code-block-header"><span>' +
+                    escapeHtml(langLabel) +
+                    '</span><button class="code-block-copy" data-target="' + cbId + '">SALIN</button></div>' +
+                    '<pre id="' + cbId + '">' + escapeHtml(cb.code) + '</pre></div><p>';
+            });
+
+            // Restore tables — each cell is individually escaped
+            html = html.replace(/%%TABLE_(\d+)%%/g, function(_, idx) {
+                var t = tables[parseInt(idx)];
+                var thCells = t.header.split('|').filter(function(c){return c.trim();});
+                var rows = t.body.split('\n').filter(function(r){return r.trim();});
+                var tableHtml = '<div class="md-table-wrap"><table><thead><tr>';
+                thCells.forEach(function(c){ tableHtml += '<th>' + escapeHtml(c.trim()) + '</th>'; });
+                tableHtml += '</tr></thead><tbody>';
+                rows.forEach(function(row) {
+                    var cells = row.split('|').filter(function(c){return c.trim();});
+                    tableHtml += '<tr>';
+                    cells.forEach(function(c){ tableHtml += '<td>' + escapeHtml(c.trim()) + '</td>'; });
+                    tableHtml += '</tr>';
+                });
+                tableHtml += '</tbody></table></div>';
+                return '</p>' + tableHtml + '<p>';
+            });
+
+            // Clean up empty paragraphs
+            html = '<p>' + html + '</p>';
+            html = html.replace(/<p>\s*<\/p>/g, '');
+            html = html.replace(/<p><br>/g, '<p>');
+            html = html.replace(/<br><\/p>/g, '</p>');
+
+            var tpl = document.createElement('template');
+            tpl.innerHTML = html;
+            while (container.firstChild) container.removeChild(container.firstChild);
+            var frag = tpl.content;
+            while (frag.firstChild) container.appendChild(frag.firstChild);
+        }
+
+        // Copy code block content — uses event delegation
+        document.addEventListener('click', function(e) {
+            var btn = e.target.closest('.code-block-copy');
+            if (!btn) return;
+            var targetId = btn.getAttribute('data-target');
+            var el = document.getElementById(targetId);
+            if (!el) return;
+            navigator.clipboard.writeText(el.textContent).then(function() {
+                btn.textContent = 'DISALIN';
+                setTimeout(function(){ btn.textContent = 'SALIN'; }, 1500);
+            });
+        });
+
+        // --- Sources with document snippets ---
+        function addSources(sources, parent) {
+            if (!sources || !sources.length) return;
+            var tid = 'ret_' + Date.now();
+            var btn = document.createElement('button');
+            btn.className = 'ret-toggle';
+            // SVG book icon
+            var tpl = document.createElement('template');
+            tpl.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>';
+            btn.appendChild(tpl.content.firstChild);
+            var webCount = sources.filter(function(s) { return s.source_uri; }).length;
+            var docCount = sources.length - webCount;
+            var label = ' Rujukan';
+            if (docCount > 0 && webCount > 0) label += ' (' + docCount + ' dokumen, ' + webCount + ' web)';
+            else if (webCount > 0) label += ' (' + webCount + ' web)';
+            else label += ' Dokumen (' + docCount + ')';
+            var btnText = document.createTextNode(label);
+            btn.appendChild(btnText);
+            btn.addEventListener('click', function() {
+                var el = document.getElementById(tid);
+                if (el) el.classList.toggle('open');
+            });
+
+            var list = document.createElement('div');
+            list.className = 'ret-list'; list.id = tid;
+            sources.slice(0, 5).forEach(function(s, i) {
+                var item = document.createElement('div');
+                item.className = 'ret-item';
+
+                // Header row: filename + score
+                var head = document.createElement('div');
+                head.className = 'ret-head';
+                var fn = document.createElement('span');
+                fn.className = 'ret-fn';
+                var fnText = (s.filename || 'unknown');
+                if (s.page) fnText += ' — Halaman ' + s.page;
+                fn.textContent = fnText;
+                var sc = document.createElement('span');
+                sc.className = 'ret-sc';
+                var scoreVal = s.rerank_score != null ? s.rerank_score : s.score;
+                sc.textContent = scoreVal ? 'Skor: ' + (Math.abs(scoreVal) < 1 ? (scoreVal * 100).toFixed(1) + '%' : scoreVal.toFixed(2)) : '';
+                head.appendChild(fn);
+                head.appendChild(sc);
+                item.appendChild(head);
+
+                // Snippet (page_content preview)
+                if (s.page_content) {
+                    var snippet = document.createElement('div');
+                    snippet.className = 'ret-snippet';
+                    snippet.textContent = s.page_content.replace(/\n+/g, ' ').trim().slice(0, 300);
+                    if (s.page_content.length > 300) {
+                        snippet.textContent += '...';
+                    }
+                    snippet.title = 'Klik untuk kembang';
+                    item.appendChild(snippet);
+                }
+
+                // Web source link or chunk tag
+                if (s.source_uri) {
+                    var link = document.createElement('a');
+                    link.href = s.source_uri;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    link.className = 'ret-chunk-tag';
+                    link.style.color = 'var(--steel)';
+                    link.style.textDecoration = 'none';
+                    link.style.cursor = 'pointer';
+                    link.textContent = s.type || 'Web';
+                    item.appendChild(link);
+                } else if (s.chunk_index != null) {
+                    var tag = document.createElement('div');
+                    tag.className = 'ret-chunk-tag';
+                    tag.textContent = 'Chunk #' + s.chunk_index;
+                    item.appendChild(tag);
+                }
+
+                list.appendChild(item);
+            });
+            parent.appendChild(btn);
+            parent.appendChild(list);
+        }
+
+        // --- Self-eval display ---
+        function addEvalCard(evalData, parent) {
+            if (!evalData || !evalData.relevan) return;
+            var card = document.createElement('div');
+            card.className = 'eval-card';
+            var title = document.createElement('div');
+            title.className = 'eval-title';
+            title.textContent = 'Penilaian Kendiri AI';
+            card.appendChild(title);
+
+            var dims = [
+                {key:'relevan', label:'Relevan'},
+                {key:'tepat', label:'Tepat'},
+                {key:'lengkap', label:'Lengkap'}
+            ];
+            dims.forEach(function(d) {
+                var val = evalData[d.key] || 3;
+                var row = document.createElement('div');
+                row.className = 'eval-row';
+                var lbl = document.createElement('div');
+                lbl.className = 'eval-label';
+                lbl.textContent = d.label;
+                var barBg = document.createElement('div');
+                barBg.className = 'eval-bar-bg';
+                var barFill = document.createElement('div');
+                barFill.className = 'eval-bar-fill';
+                barFill.style.width = (val * 20) + '%';
+                barBg.appendChild(barFill);
+                var sc = document.createElement('div');
+                sc.className = 'eval-score';
+                sc.textContent = val + '/5';
+                row.appendChild(lbl);
+                row.appendChild(barBg);
+                row.appendChild(sc);
+                card.appendChild(row);
+            });
+
+            if (evalData.nota) {
+                var sum = document.createElement('div');
+                sum.className = 'eval-summary';
+                sum.textContent = (evalData.purata || '?') + '/5 — ' + evalData.nota;
+                card.appendChild(sum);
+            }
+            parent.appendChild(card);
+        }
+
+        // --- Follow-up chips ---
+        function addFollowupChips(suggestions, parent) {
+            if (!suggestions || !suggestions.length) return;
+            var sec = document.createElement('div');
+            sec.className = 'followup-section';
+            var lbl = document.createElement('div');
+            lbl.className = 'followup-label';
+            lbl.textContent = 'Soalan Susulan';
+            sec.appendChild(lbl);
+            var row = document.createElement('div');
+            row.className = 'followup-chips';
+            suggestions.forEach(function(s) {
+                var chip = document.createElement('button');
+                chip.className = 'followup-chip';
+                chip.textContent = s;
+                chip.addEventListener('click', function() {
+                    qInput.value = s;
+                    send();
+                });
+                row.appendChild(chip);
+            });
+            sec.appendChild(row);
+            parent.appendChild(sec);
+        }
+
+        // --- Action toolbar (TTS + feedback + comment) ---
+        var currentAudio = null;
+
+        // SVG icon templates (inline, no external deps)
+        var ICONS = {
+            speaker: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>',
+            stop: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>',
+            thumbUp: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>',
+            thumbDown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>',
+            comment: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+            copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+            check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+        };
+
+        function makeBtn(iconKey, tip) {
+            var btn = document.createElement('button');
+            btn.className = 'act-btn';
+            btn.setAttribute('data-tip', tip);
+            var tpl = document.createElement('template');
+            tpl.innerHTML = ICONS[iconKey];
+            btn.appendChild(tpl.content.firstChild);
+            return btn;
+        }
+
+        function addActionBar(msgId, text, parent) {
+            var bar = document.createElement('div');
+            bar.className = 'msg-actions';
+
+            // -- Copy button --
+            var copyBtn = makeBtn('copy', 'Salin');
+            copyBtn.addEventListener('click', function() {
+                navigator.clipboard.writeText(text).then(function() {
+                    copyBtn.innerHTML = ICONS.check;
+                    copyBtn.style.color = '#22c55e';
+                    setTimeout(function() {
+                        copyBtn.innerHTML = ICONS.copy;
+                        copyBtn.style.color = '';
+                    }, 1500);
+                });
+            });
+            bar.appendChild(copyBtn);
+
+            // -- TTS button --
+            if (text && text.length >= 20) {
+                var ttsBtn = makeBtn('speaker', 'Dengar');
+                ttsBtn.addEventListener('click', function() {
+                    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+                    if (ttsBtn.classList.contains('playing')) {
+                        ttsBtn.classList.remove('playing');
+                        ttsBtn.innerHTML = ICONS.speaker;
+                        return;
+                    }
+                    ttsBtn.innerHTML = ICONS.speaker;
+                    ttsBtn.style.opacity = '0.4';
+                    var clean = text.replace(/\*\*/g,'').replace(/`/g,'').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1').replace(/[#*_]/g,'');
+                    fetch('/api/voice/synthesize/local', {
+                        method:'POST', headers:{'Content-Type':'application/json'},
+                        body: JSON.stringify({text: clean.slice(0, 3000)})
+                    }).then(function(r) {
+                        if (!r.ok) throw new Error('TTS failed');
+                        return r.blob();
+                    }).then(function(blob) {
+                        ttsBtn.style.opacity = '';
+                        var url = URL.createObjectURL(blob);
+                        currentAudio = new Audio(url);
+                        currentAudio.play();
+                        ttsBtn.innerHTML = ICONS.stop;
+                        ttsBtn.classList.add('playing');
+                        currentAudio.onended = function() {
+                            ttsBtn.classList.remove('playing');
+                            ttsBtn.innerHTML = ICONS.speaker;
+                            currentAudio = null;
+                        };
+                    }).catch(function() {
+                        ttsBtn.style.opacity = '';
+                        ttsBtn.innerHTML = ICONS.speaker;
+                    });
+                });
+                bar.appendChild(ttsBtn);
+            }
+
+            // -- Divider --
+            var div1 = document.createElement('div');
+            div1.className = 'act-divider';
+            bar.appendChild(div1);
+
+            // -- Thumbs up --
+            var upBtn = makeBtn('thumbUp', 'Jawapan baik');
+            if (feedback[msgId] && feedback[msgId].r === 'up') upBtn.classList.add('active-up');
+            bar.appendChild(upBtn);
+
+            // -- Thumbs down --
+            var dnBtn = makeBtn('thumbDown', 'Boleh diperbaiki');
+            if (feedback[msgId] && feedback[msgId].r === 'down') dnBtn.classList.add('active-down');
+            bar.appendChild(dnBtn);
+
+            // -- Divider --
+            var div2 = document.createElement('div');
+            div2.className = 'act-divider';
+            bar.appendChild(div2);
+
+            // -- Comment button --
+            var cmtBtn = makeBtn('comment', 'Beri ulasan');
+            bar.appendChild(cmtBtn);
+
+            parent.appendChild(bar);
+
+            // Comment form (hidden by default)
+            var cmtForm = document.createElement('div');
+            cmtForm.className = 'fb-comment-form';
+            var cmtInput = document.createElement('textarea');
+            cmtInput.className = 'fb-comment-input';
+            cmtInput.placeholder = 'Tulis ulasan tentang jawapan ini...';
+            cmtInput.rows = 1;
+            cmtInput.addEventListener('input', function() {
+                cmtInput.style.height = 'auto';
+                cmtInput.style.height = Math.min(cmtInput.scrollHeight, 80) + 'px';
+            });
+            var cmtSend = document.createElement('button');
+            cmtSend.className = 'fb-comment-send';
+            cmtSend.textContent = 'Hantar';
+            cmtForm.appendChild(cmtInput);
+            cmtForm.appendChild(cmtSend);
+            parent.appendChild(cmtForm);
+
+            // Wire up feedback
+            function applyFeedback(type) {
+                var wasActive = feedback[msgId] && feedback[msgId].r === type;
+                if (wasActive) {
+                    delete feedback[msgId];
+                } else {
+                    feedback[msgId] = feedback[msgId] || {};
+                    feedback[msgId].r = type;
+                }
+                saveFeedback();
+                upBtn.className = 'act-btn' + (feedback[msgId] && feedback[msgId].r === 'up' ? ' active-up' : '');
+                dnBtn.className = 'act-btn' + (feedback[msgId] && feedback[msgId].r === 'down' ? ' active-down' : '');
+                // Show actions bar persistently after interaction
+                bar.classList.add('visible');
+                // Send to backend
+                var hi = history.findIndex(function(m){return m.id===msgId;});
+                var uq = hi > 0 ? (history[hi-1].content||'') : '';
+                var br = hi >= 0 ? (history[hi].content||'') : '';
+                fetch('/api/feedback', {
+                    method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({query:uq, response:br.slice(0,500), rating:type==='up'?5:1, comment: (feedback[msgId] && feedback[msgId].c) || ''})
+                }).catch(function(){});
+                // Auto-open comment form on thumbs down
+                if (type === 'down' && !wasActive) {
+                    cmtForm.classList.add('open');
+                    cmtInput.focus();
+                }
+            }
+
+            upBtn.addEventListener('click', function() { applyFeedback('up'); });
+            dnBtn.addEventListener('click', function() { applyFeedback('down'); });
+
+            cmtBtn.addEventListener('click', function() {
+                cmtForm.classList.toggle('open');
+                if (cmtForm.classList.contains('open')) cmtInput.focus();
+            });
+
+            cmtSend.addEventListener('click', function() {
+                var comment = cmtInput.value.trim();
+                if (!comment) return;
+                feedback[msgId] = feedback[msgId] || {};
+                feedback[msgId].c = comment;
+                saveFeedback();
+                // Send comment to backend
+                var hi = history.findIndex(function(m){return m.id===msgId;});
+                var uq = hi > 0 ? (history[hi-1].content||'') : '';
+                var br = hi >= 0 ? (history[hi].content||'') : '';
+                var rating = feedback[msgId].r === 'up' ? 5 : feedback[msgId].r === 'down' ? 1 : 3;
+                fetch('/api/feedback', {
+                    method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({query:uq, response:br.slice(0,500), rating:rating, comment:comment})
+                }).catch(function(){});
+                // Show sent confirmation
+                cmtForm.classList.remove('open');
+                var sent = document.createElement('div');
+                sent.className = 'fb-sent';
+                sent.textContent = 'Ulasan dihantar. Terima kasih!';
+                parent.appendChild(sent);
+                setTimeout(function() { if (sent.parentNode) sent.parentNode.removeChild(sent); }, 3000);
+            });
+        }
+
+        // --- Add message ---
+        function addMsg(role, content, retrieval, ts, id, anim) {
+            if (anim === undefined) anim = true;
+            if (welcome.style.display !== 'none') welcome.style.display = 'none';
+            var isUser = role === 'user';
+            var wrap = document.createElement('div');
+            wrap.className = 'msg ' + (isUser ? 'user' : 'bot');
+            if (id) wrap.dataset.mid = id;
+            if (!anim) wrap.style.animation = 'none';
+            var bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            if (isUser) { bubble.textContent = content; }
+            else { renderMd(content, bubble); }
+            var inner = document.createElement('div');
+            inner.appendChild(bubble);
+            if (!isUser && retrieval) addSources(retrieval, inner);
+            if (!isUser && id && content) addActionBar(id, content, inner);
+            wrap.appendChild(inner);
+            chatBody.appendChild(wrap);
+            chatBody.scrollTop = chatBody.scrollHeight;
+            return wrap;
+        }
+
+        // --- Clear ---
+        function clearChat() {
+            history = []; feedback = {};
+            localStorage.removeItem('jkr_ai_history');
+            localStorage.removeItem('jkr_ai_feedback');
+            while (chatBody.firstChild) chatBody.removeChild(chatBody.firstChild);
+            chatBody.appendChild(welcome);
+            welcome.style.display = '';
+        }
+        clearBtn.addEventListener('click', clearChat);
+
+        // --- Restore ---
+        load();
+        if (history.length > 0) {
+            welcome.style.display = 'none';
+            history.forEach(function(m) { addMsg(m.role, m.content, m.retrieval, m.ts, m.id, false); });
+        }
+
+        // --- Send ---
+        async function send() {
+            var text = qInput.value.trim();
+            if (!text) return;
+            var uid = genId(), uts = timeStr();
+            addMsg('user', text, null, uts, uid);
+            history.push({role:'user', content:text, ts:uts, id:uid});
+            saveHistory();
+            qInput.value = ''; qInput.style.height = 'auto';
+            sendBtn.disabled = true;
+            sendBtn.querySelector('span').textContent = '...';
+
+            // typing indicator
+            var bid = genId(), bts = timeStr();
+            var typWrap = document.createElement('div');
+            typWrap.className = 'msg bot';
+            var typBub = document.createElement('div');
+            typBub.className = 'bubble';
+            var dots = document.createElement('div');
+            dots.className = 'typing-dots';
+            for (var i=0;i<3;i++) dots.appendChild(document.createElement('span'));
+            typBub.appendChild(dots);
+            var typInner = document.createElement('div');
+            typInner.appendChild(typBub);
+            typWrap.appendChild(typInner);
+            chatBody.appendChild(typWrap);
+            chatBody.scrollTop = chatBody.scrollHeight;
+
+            try {
+                var payload = history
+                    .filter(function(m){return m.role==='user'||m.role==='bot';})
+                    .map(function(m){return {role:m.role==='bot'?'assistant':m.role, content:m.content};});
+
+                var res = await fetch('/api/chat/stream', {
+                    method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({messages:payload})
+                });
+                if (!res.ok) throw new Error(res.statusText);
+
+                if (typWrap.parentNode) typWrap.parentNode.removeChild(typWrap);
+                var botEl = addMsg('bot','',null,bts,bid);
+                var bub = botEl.querySelector('.bubble');
+                bub.classList.add('streaming');
+                var cWrap = bub.parentElement;
+                var full = '', sources = null;
+                var streamEval = null, streamFollowups = null;
+                var reader = res.body.getReader();
+                var dec = new TextDecoder();
+                var buf = '';
+
+                while (true) {
+                    var chunk = await reader.read();
+                    if (chunk.done) break;
+                    buf += dec.decode(chunk.value, {stream:true});
+                    var lines = buf.split('\n');
+                    buf = lines.pop() || '';
+                    for (var li=0; li<lines.length; li++) {
+                        var ln = lines[li];
+                        if (ln.indexOf('data: ')!==0) continue;
+                        try {
+                            var ev = JSON.parse(ln.slice(6));
+                            if (ev.type==='sources') sources = ev.data.retrieval;
+                            else if (ev.type==='chunk') { full += ev.data; renderMd(full, bub); chatBody.scrollTop = chatBody.scrollHeight; }
+                            else if (ev.type==='done') {
+                                full = ev.data.full_reply || full;
+                                streamEval = ev.data.self_evaluation || null;
+                                streamFollowups = ev.data.followup_suggestions || null;
+                            }
+                        } catch(e){}
+                    }
+                }
+                bub.classList.remove('streaming');
+                renderMd(full, bub);
+                // refresh all extras
+                var old = cWrap.querySelectorAll('.ret-toggle,.ret-list,.msg-actions,.fb-comment-form,.eval-card,.followup-section');
+                old.forEach(function(el){el.parentNode.removeChild(el);});
+                if (sources) addSources(sources, cWrap);
+                addActionBar(bid, full, cWrap);
+
+                // Render self-eval and follow-ups from done event
+                if (streamEval) addEvalCard(streamEval, cWrap);
+                if (streamFollowups && streamFollowups.length) addFollowupChips(streamFollowups, cWrap);
+
+                history.push({role:'bot',content:full,retrieval:sources,ts:bts,id:bid});
+                saveHistory();
+
+            } catch(err) {
+                if (typWrap.parentNode) typWrap.parentNode.removeChild(typWrap);
+                // fallback to non-streaming
+                try {
+                    var p2 = history
+                        .filter(function(m){return m.role==='user'||m.role==='bot';})
+                        .map(function(m){return {role:m.role==='bot'?'assistant':m.role, content:m.content};});
+                    var r2 = await fetch('/api/chat', {
+                        method:'POST', headers:{'Content-Type':'application/json'},
+                        body: JSON.stringify({messages:p2})
+                    });
+                    if (!r2.ok) {
+                        var em = 'Maaf, ralat telah berlaku. Sila cuba semula.';
+                        try { var ej = await r2.json(); if(ej.detail) em=ej.detail; } catch(x){}
+                        addMsg('bot',em,null,bts,bid);
+                        history.push({role:'bot',content:em,ts:bts,id:bid});
+                    } else {
+                        var d2 = await r2.json();
+                        var rp = d2.reply || 'Tiada respons diterima.';
+                        addMsg('bot',rp,d2.retrieval,bts,bid);
+                        history.push({role:'bot',content:rp,retrieval:d2.retrieval,ts:bts,id:bid});
+                    }
+                    saveHistory();
+                } catch(e2) {
+                    var msg = 'Maaf, ralat rangkaian. Sila cuba semula.';
+                    addMsg('bot',msg,null,bts,bid);
+                    history.push({role:'bot',content:msg,ts:bts,id:bid});
+                    saveHistory();
+                }
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.querySelector('span').textContent = 'Hantar';
+                qInput.focus();
+            }
+        }
+
+        // --- Microphone recording ---
+        var micBtn = document.getElementById('micBtn');
+        var mediaRecorder = null;
+        var audioChunks = [];
+        var isRecording = false;
+
+        function toggleMic() {
+            if (isRecording) stopRecording();
+            else startRecording();
+        }
+
+        function startRecording() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert('Pelayar anda tidak menyokong rakaman audio.');
+                return;
+            }
+            navigator.mediaDevices.getUserMedia({audio: true}).then(function(stream) {
+                audioChunks = [];
+                mediaRecorder = new MediaRecorder(stream, {mimeType: 'audio/webm'});
+                mediaRecorder.ondataavailable = function(e) {
+                    if (e.data.size > 0) audioChunks.push(e.data);
+                };
+                mediaRecorder.onstop = function() {
+                    stream.getTracks().forEach(function(t){t.stop();});
+                    var blob = new Blob(audioChunks, {type: 'audio/webm'});
+                    transcribeBlob(blob);
+                };
+                mediaRecorder.start();
+                isRecording = true;
+                micBtn.classList.add('recording');
+                micBtn.title = 'Berhenti rakaman';
+            }).catch(function(err) {
+                console.error('Mic error:', err);
+                alert('Tidak dapat akses mikrofon.');
+            });
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            isRecording = false;
+            micBtn.classList.remove('recording');
+            micBtn.title = 'Rakam suara';
+        }
+
+        function transcribeBlob(blob) {
+            var reader = new FileReader();
+            reader.onloadend = function() {
+                var b64 = reader.result.split(',')[1];
+                qInput.value = 'Mentranskripsi audio...';
+                fetch('/api/voice/transcribe/local', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({audio_data: b64})
+                }).then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.text) {
+                        qInput.value = data.text;
+                        autoGrow(qInput);
+                        qInput.focus();
+                    } else {
+                        qInput.value = '';
+                    }
+                }).catch(function() {
+                    qInput.value = '';
+                    alert('Ralat transkripsi audio.');
+                });
+            };
+            reader.readAsDataURL(blob);
+        }
+
+        // expose for onclick handlers
+        window.send = send;
+        window.handleKey = handleKey;
+        window.autoGrow = autoGrow;
+        window.askChip = askChip;
+        window.toggleMic = toggleMic;
+
+        qInput.focus();
+    })();
+    </script>
+</body>
+</html>

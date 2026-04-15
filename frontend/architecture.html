@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JKR FMI — Arkitektur Sistem</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-abyss: #060a10;
+            --bg-plate: #0b1018;
+            --bg-raised: #111822;
+            --text-primary: #e8ecf2;
+            --text-secondary: #7a8599;
+            --text-dim: #4a5568;
+            --amber: #d4a017;
+            --amber-light: #e8b923;
+            --amber-hot: #f0c030;
+            --amber-dim: rgba(212,160,23,0.12);
+            --amber-glow: rgba(212,160,23,0.25);
+            --steel: #4a7cad;
+            --steel-dim: rgba(74,124,173,0.10);
+            --steel-border: rgba(74,124,173,0.20);
+            --glass-bg: rgba(11,16,24,0.65);
+            --glass-border: rgba(255,255,255,0.06);
+            --font-display: 'Bebas Neue', sans-serif;
+            --font-body: 'DM Sans', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-abyss);
+            color: var(--text-primary);
+            line-height: 1.7;
+            min-height: 100vh;
+        }
+
+        /* Atmosphere */
+        .atmos-amber {
+            position: fixed; top: -15%; left: -10%;
+            width: 45vw; height: 45vw;
+            background: radial-gradient(circle, rgba(212,160,23,0.08) 0%, transparent 65%);
+            filter: blur(90px); pointer-events: none; z-index: 0;
+        }
+        .atmos-steel {
+            position: fixed; bottom: -15%; right: -10%;
+            width: 50vw; height: 50vw;
+            background: radial-gradient(circle, rgba(74,124,173,0.05) 0%, transparent 65%);
+            filter: blur(100px); pointer-events: none; z-index: 0;
+        }
+        .blueprint-grid {
+            position: fixed; inset: -40px;
+            background-image:
+                linear-gradient(rgba(74,124,173,0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(74,124,173,0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none; z-index: 0;
+            animation: grid-scroll 30s linear infinite;
+        }
+        @keyframes grid-scroll {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(40px, 40px); }
+        }
+
+        /* Layout */
+        .page { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+        /* Header */
+        .page-header {
+            display: flex; align-items: center; gap: 1rem;
+            padding-bottom: 1.5rem; margin-bottom: 2rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .page-header img { width: 48px; height: auto; filter: drop-shadow(0 2px 6px rgba(212,160,23,0.25)); }
+        .page-header h1 { font-family: var(--font-display); font-size: 2rem; letter-spacing: 2px; color: var(--amber-light); }
+        .back-link {
+            margin-left: auto; font-size: 0.8rem; color: var(--text-secondary);
+            text-decoration: none; padding: 0.4rem 0.8rem; border: 1px solid var(--glass-border);
+            border-radius: 6px; transition: all 0.2s;
+        }
+        .back-link:hover { color: var(--amber-light); border-color: var(--amber-dim); background: var(--amber-dim); }
+
+        /* Sections */
+        .section { margin-bottom: 2.5rem; }
+        .section h2 {
+            font-family: var(--font-display); font-size: 1.5rem; letter-spacing: 1.5px;
+            color: var(--amber); margin-bottom: 1rem;
+            padding-bottom: 0.5rem; border-bottom: 1px solid rgba(212,160,23,0.15);
+        }
+        .section h3 { font-size: 0.95rem; font-weight: 600; color: var(--amber-light); margin: 1.25rem 0 0.5rem; }
+        .section p { color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 0.75rem; }
+
+        /* Cards */
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-top: 0.75rem; }
+        .card {
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            border-radius: 12px; padding: 1.25rem; transition: border-color 0.2s;
+        }
+        .card:hover { border-color: rgba(212,160,23,0.2); }
+        .card-label { font-family: var(--font-mono); font-size: 0.65rem; font-weight: 600; color: var(--amber); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 0.5rem; }
+        .card-title { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.35rem; }
+        .card-desc { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5; }
+        .card-tag {
+            display: inline-block; font-family: var(--font-mono); font-size: 0.6rem;
+            padding: 0.15rem 0.5rem; border-radius: 4px; margin-top: 0.5rem;
+            background: var(--steel-dim); color: var(--steel); border: 1px solid var(--steel-border);
+        }
+
+        /* Flow diagram */
+        .flow { display: flex; flex-direction: column; gap: 0; margin: 1rem 0; }
+        .flow-step {
+            display: flex; align-items: flex-start; gap: 1rem; padding: 1rem 0;
+            border-left: 2px solid rgba(212,160,23,0.2); margin-left: 1rem; padding-left: 1.5rem;
+            position: relative;
+        }
+        .flow-step::before {
+            content: attr(data-step);
+            position: absolute; left: -0.75rem; top: 1rem;
+            width: 1.5rem; height: 1.5rem; border-radius: 50%;
+            background: var(--amber); color: #000; font-family: var(--font-mono);
+            font-size: 0.65rem; font-weight: 700; display: flex; align-items: center; justify-content: center;
+        }
+        .flow-step:last-child { border-left-color: transparent; }
+        .flow-content { flex: 1; }
+        .flow-title { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem; }
+        .flow-desc { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5; }
+        .flow-tech { font-family: var(--font-mono); font-size: 0.7rem; color: var(--steel); margin-top: 0.3rem; }
+
+        /* Table */
+        .spec-table { width: 100%; border-collapse: collapse; margin: 0.75rem 0; font-size: 0.82rem; }
+        .spec-table th {
+            text-align: left; padding: 0.6rem 0.75rem; font-family: var(--font-mono);
+            font-size: 0.65rem; font-weight: 600; color: var(--amber);
+            letter-spacing: 1px; text-transform: uppercase;
+            border-bottom: 1px solid rgba(212,160,23,0.2); background: rgba(212,160,23,0.04);
+        }
+        .spec-table td {
+            padding: 0.5rem 0.75rem; color: var(--text-secondary);
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .spec-table td:first-child { color: var(--text-primary); font-weight: 500; }
+
+        /* Inline code */
+        code {
+            font-family: var(--font-mono); font-size: 0.78rem;
+            background: rgba(212,160,23,0.08); color: var(--amber-light);
+            padding: 0.1rem 0.4rem; border-radius: 4px;
+        }
+
+        /* Stats bar */
+        .stats { display: flex; gap: 1rem; flex-wrap: wrap; margin: 1rem 0; }
+        .stat {
+            background: var(--glass-bg); border: 1px solid var(--glass-border);
+            border-radius: 10px; padding: 1rem 1.25rem; flex: 1; min-width: 140px; text-align: center;
+        }
+        .stat-value { font-family: var(--font-display); font-size: 1.8rem; color: var(--amber-light); letter-spacing: 1px; }
+        .stat-label { font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.2rem; }
+
+        @media (max-width: 600px) {
+            .page { padding: 1rem; }
+            .page-header h1 { font-size: 1.4rem; }
+            .card-grid { grid-template-columns: 1fr; }
+            .stats { flex-direction: column; }
+            .flow-step { padding-left: 1rem; margin-left: 0.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="atmos-amber"></div>
+<div class="atmos-steel"></div>
+<div class="blueprint-grid"></div>
+
+<div class="page">
+
+    <div class="page-header">
+        <img src="jkr_logo.png" alt="JKR Logo">
+        <h1>ARKITEKTUR SISTEM</h1>
+        <a href="./" class="back-link">Kembali ke Chat</a>
+    </div>
+
+    <!-- OVERVIEW -->
+    <div class="section">
+        <h2>GAMBARAN KESELURUHAN</h2>
+        <p>JKR FMI (Facility Management Intelligence) ialah sistem chatbot AI yang direka khusus untuk menjawab soalan teknikal berkaitan pengurusan fasiliti bangunan kerajaan Malaysia. Sistem ini menggunakan pendekatan RAG (Retrieval-Augmented Generation) dengan pencarian hibrid, pengembangan pertanyaan automatik, dan penilaian kendiri untuk memastikan jawapan berkualiti tinggi.</p>
+
+        <div class="stats" id="stats">
+            <div class="stat"><div class="stat-value" id="stat-chunks">515</div><div class="stat-label">Chunks Diindeks</div></div>
+            <div class="stat"><div class="stat-value">122B</div><div class="stat-label">Parameter LLM</div></div>
+            <div class="stat"><div class="stat-value">10</div><div class="stat-label">Ciri AI</div></div>
+            <div class="stat"><div class="stat-value">GPU</div><div class="stat-label">NVIDIA GB10</div></div>
+        </div>
+    </div>
+
+    <!-- PIPELINE -->
+    <div class="section">
+        <h2>ALIRAN PEMPROSESAN (PIPELINE)</h2>
+        <p>Setiap soalan pengguna melalui 8 langkah pemprosesan sebelum jawapan dihasilkan:</p>
+
+        <div class="flow">
+            <div class="flow-step" data-step="1">
+                <div class="flow-content">
+                    <div class="flow-title">Klasifikasi Pertanyaan</div>
+                    <div class="flow-desc">Sistem mengkategorikan soalan sebagai <strong>internal</strong> (dokumen JKR), <strong>external</strong> (maklumat web), atau <strong>hybrid</strong> (kedua-duanya). Menggunakan 55+ kata kunci dan corak regex untuk pengesanan tepat.</div>
+                    <div class="flow-tech">classify_query() &rarr; "internal" | "external" | "hybrid"</div>
+                </div>
+            </div>
+            <div class="flow-step" data-step="2">
+                <div class="flow-content">
+                    <div class="flow-title">Pengembangan Pertanyaan (Query Expansion)</div>
+                    <div class="flow-desc">Model LLM pantas (Qwen3.5-27B) menjana 3 variasi soalan asal untuk meningkatkan penemuan semula. Contoh: "penyelenggaraan mekanikal" juga dicari sebagai "mechanical services maintenance" dan "jadual PPM mekanikal".</div>
+                    <div class="flow-tech">Qwen3.5-27B &rarr; 3 variasi + soalan asal = 4 pertanyaan</div>
+                </div>
+            </div>
+            <div class="flow-step" data-step="3">
+                <div class="flow-content">
+                    <div class="flow-title">Pencarian Hibrid (Vector + BM25)</div>
+                    <div class="flow-desc">Dua kaedah pencarian dijalankan serentak: <strong>Vector search</strong> menggunakan embeddings untuk makna semantik, dan <strong>BM25</strong> menggunakan padanan kata kunci. Kedua-dua set hasil digabungkan menggunakan <em>Reciprocal Rank Fusion</em> (RRF).</div>
+                    <div class="flow-tech">ChromaDB HNSW (M=32, ef=200) + BM25Okapi &rarr; RRF fusion</div>
+                </div>
+            </div>
+            <div class="flow-step" data-step="4">
+                <div class="flow-content">
+                    <div class="flow-title">Carian Web (jika berkaitan)</div>
+                    <div class="flow-desc">Untuk pertanyaan <em>external</em> atau <em>hybrid</em>, sistem mencari web menggunakan dwi-pembekal: <strong>Tavily</strong> (utama) dan <strong>Brave Search</strong> (sandaran). Pertanyaan difokuskan kepada topik JKR secara automatik.</div>
+                    <div class="flow-tech">Tavily API (advanced) &rarr; Brave fallback &rarr; top 5 hasil</div>
+                </div>
+            </div>
+            <div class="flow-step" data-step="5">
+                <div class="flow-content">
+                    <div class="flow-title">Penarafan Semula (Cross-Encoder Reranking)</div>
+                    <div class="flow-desc">Cross-encoder menilai setiap pasangan (soalan, dokumen) secara langsung untuk menentukan relevansi sebenar. Menapis daripada 15 calon kepada 7 dokumen terbaik.</div>
+                    <div class="flow-tech">ms-marco-MiniLM-L-6-v2 on GPU &rarr; top 7 reranked</div>
+                </div>
+            </div>
+            <div class="flow-step" data-step="6">
+                <div class="flow-content">
+                    <div class="flow-title">Penjanaan Jawapan (LLM Generation)</div>
+                    <div class="flow-desc">Model utama Qwen3.5-122B menjana jawapan berdasarkan dokumen yang diperoleh, dengan arahan Chain-of-Thought (CoT) untuk penaakulan berstruktur. Jawapan distrim secara langsung melalui SSE.</div>
+                    <div class="flow-tech">MTAI API (Qwen3.5-122B) &rarr; SSE streaming &rarr; max 4000 token</div>
+                </div>
+            </div>
+            <div class="flow-step" data-step="7">
+                <div class="flow-content">
+                    <div class="flow-title">Penilaian Kendiri (Self-Evaluation)</div>
+                    <div class="flow-desc">Selepas jawapan dihasilkan, model pantas menilai kualiti jawapan berdasarkan 3 dimensi: <strong>Relevan</strong> (adakah menjawab soalan?), <strong>Tepat</strong> (adakah berdasarkan dokumen?), dan <strong>Lengkap</strong> (adakah cukup terperinci?).</div>
+                    <div class="flow-tech">Qwen3.5-27B &rarr; skor 1-5 &times; 3 dimensi</div>
+                </div>
+            </div>
+            <div class="flow-step" data-step="8">
+                <div class="flow-content">
+                    <div class="flow-title">Cadangan Susulan (Follow-up Suggestions)</div>
+                    <div class="flow-desc">Model pantas menjana 3 soalan susulan yang berkaitan berdasarkan konteks perbualan. Membantu pengguna meneroka topik lebih mendalam.</div>
+                    <div class="flow-tech">Qwen3.5-27B &rarr; 3 soalan cadangan</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- COMPONENTS -->
+    <div class="section">
+        <h2>KOMPONEN UTAMA</h2>
+
+        <h3>Model AI</h3>
+        <div class="card-grid">
+            <div class="card">
+                <div class="card-label">LLM Utama</div>
+                <div class="card-title">Qwen3.5-122B</div>
+                <div class="card-desc">Model bahasa berskala besar (122 bilion parameter) untuk penjanaan jawapan berkualiti tinggi. Diakses melalui MTAI API dengan 4 kunci API bergilir.</div>
+                <span class="card-tag">MTAI API</span>
+            </div>
+            <div class="card">
+                <div class="card-label">LLM Pantas</div>
+                <div class="card-title">Qwen3.5-27B</div>
+                <div class="card-desc">Model lebih kecil (27B parameter) untuk tugas utiliti: pengembangan pertanyaan, penilaian kendiri, dan cadangan susulan. Lebih pantas untuk tugasan sokongan.</div>
+                <span class="card-tag">MTAI API</span>
+            </div>
+            <div class="card">
+                <div class="card-label">Embeddings</div>
+                <div class="card-title">Mesolitica Mistral 191M</div>
+                <div class="card-desc">Model embedding khusus Bahasa Melayu (191 juta parameter). Menukar teks kepada vektor 1024-dimensi untuk pencarian semantik. Dijalankan secara tempatan pada GPU.</div>
+                <span class="card-tag">GPU Tempatan</span>
+            </div>
+            <div class="card">
+                <div class="card-label">Penarafan Semula</div>
+                <div class="card-title">ms-marco-MiniLM-L-6-v2</div>
+                <div class="card-desc">Cross-encoder yang menilai relevansi pasangan soalan-dokumen secara langsung. Memproses batch pada GPU untuk kelajuan optimum.</div>
+                <span class="card-tag">GPU Tempatan</span>
+            </div>
+        </div>
+
+        <h3>Suara (Voice)</h3>
+        <div class="card-grid">
+            <div class="card">
+                <div class="card-label">Speech-to-Text</div>
+                <div class="card-title">Whisper large-v3</div>
+                <div class="card-desc">Model transkripsi OpenAI dalam mod float16 pada GPU. Menyokong Bahasa Melayu dan Bahasa Inggeris. Menggunakan Faster-Whisper untuk prestasi optimum.</div>
+                <span class="card-tag">GPU Tempatan</span>
+            </div>
+            <div class="card">
+                <div class="card-label">Text-to-Speech</div>
+                <div class="card-title">MMS-TTS Malay</div>
+                <div class="card-desc">Model TTS Meta (Massively Multilingual Speech) khusus Bahasa Melayu. Menjana audio WAV 16kHz secara tempatan pada GPU.</div>
+                <span class="card-tag">GPU Tempatan</span>
+            </div>
+        </div>
+
+        <h3>Carian Web</h3>
+        <div class="card-grid">
+            <div class="card">
+                <div class="card-label">Pembekal Utama</div>
+                <div class="card-title">Tavily Search</div>
+                <div class="card-desc">API carian AI yang mengembalikan kandungan berstruktur. Menggunakan mod "advanced" untuk hasil lebih mendalam. Pertanyaan difokuskan kepada topik JKR secara automatik.</div>
+                <span class="card-tag">API Luaran</span>
+            </div>
+            <div class="card">
+                <div class="card-label">Pembekal Sandaran</div>
+                <div class="card-title">Brave Search</div>
+                <div class="card-desc">Sandaran jika Tavily gagal atau tidak tersedia. Menggunakan API REST Brave Search dengan 5 hasil teratas.</div>
+                <span class="card-tag">API Luaran</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- KNOWLEDGE BASE -->
+    <div class="section">
+        <h2>PANGKALAN PENGETAHUAN</h2>
+
+        <table class="spec-table">
+            <thead>
+                <tr><th>Perkara</th><th>Butiran</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Dokumen</td><td>Technical Specification for Building Facility Management & Maintenance (CPAB.BPPA.FMM.TS(01).2025, Semakan 2, November 2025)</td></tr>
+                <tr><td>Halaman</td><td>85 halaman, 7 seksyen utama (A-G)</td></tr>
+                <tr><td>Chunks</td><td id="kb-chunks">515 chunks (600 aksara setiap chunk, 120 aksara overlap)</td></tr>
+                <tr><td>Metadata</td><td>Nama fail, indeks chunk, nombor halaman, jenis dokumen</td></tr>
+                <tr><td>Pangkalan Vektor</td><td>ChromaDB dengan HNSW (M=32, construction_ef=200, search_ef=100)</td></tr>
+                <tr><td>Dimensi Vektor</td><td>1024 (Mesolitica Mistral 191M)</td></tr>
+            </tbody>
+        </table>
+
+        <h3>Liputan Dokumen</h3>
+        <table class="spec-table">
+            <thead>
+                <tr><th>Seksyen</th><th>Kandungan</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Section A (1.0-5.0)</td><td>Umum -- tujuan, objektif, skop perkhidmatan, inventori aset, peraturan dan piawaian</td></tr>
+                <tr><td>Section B (6.0)</td><td>Pelan Pengurusan Fasiliti (FMP)</td></tr>
+                <tr><td>Section C (7.0-12.0)</td><td>Organisasi tapak kontraktor -- program kerja, pembayaran, sumber manusia, SHE, QMS</td></tr>
+                <tr><td>Section D (13.0-20.0)</td><td>Perkhidmatan pengurusan fasiliti -- peralihan, FCA, help desk, MIS, utiliti, risiko, HSE</td></tr>
+                <tr><td>Section E (21.0-23.0)</td><td>Operasi dan penyelenggaraan kejuruteraan -- CMMS, landskap, mekanikal, elektrikal, sivil</td></tr>
+                <tr><td>Section F (24.0-25.0)</td><td>Perkhidmatan kustodial -- pembersihan, kawalan perosak</td></tr>
+                <tr><td>Section G (26.0)</td><td>Nasihat teknikal dan cadangan pakar</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- INFRASTRUCTURE -->
+    <div class="section">
+        <h2>INFRASTRUKTUR</h2>
+
+        <h3>Perkakasan</h3>
+        <div class="card-grid">
+            <div class="card">
+                <div class="card-label">Pelayan</div>
+                <div class="card-title">NVIDIA GX10 Grace Blackwell</div>
+                <div class="card-desc">GPU GB10 (SM 12.1), 20 teras ARM (Cortex-X925 + A725), 122GB memori bersatu, 916GB NVMe. Semua model AI dijalankan secara tempatan pada GPU.</div>
+                <span class="card-tag">Tempatan</span>
+            </div>
+            <div class="card">
+                <div class="card-label">Perisian</div>
+                <div class="card-title">Stack Teknologi</div>
+                <div class="card-desc">Ubuntu 24.04, CUDA 13.0, Python 3.12, FastAPI + Uvicorn (4 workers), Nginx, Redis, ChromaDB, PyTorch.</div>
+                <span class="card-tag">Pengeluaran</span>
+            </div>
+        </div>
+
+        <h3>Perkhidmatan</h3>
+        <table class="spec-table">
+            <thead>
+                <tr><th>Komponen</th><th>Butiran</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Backend API</td><td>FastAPI pada port 8003, 4 Uvicorn workers, uvloop</td></tr>
+                <tr><td>Cache</td><td>Redis (port 6379) -- respons dicache selama 10 minit</td></tr>
+                <tr><td>Gateway</td><td>Nginx -- SSL/TLS, gzip, rate limiting, penghalaan</td></tr>
+                <tr><td>Tunnel</td><td>Cloudflare Tunnel -- akses awam melalui jkr.pendakwah.tech</td></tr>
+                <tr><td>Systemd</td><td>Auto-start, had memori 8GB, perlindungan keselamatan</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- SECURITY -->
+    <div class="section">
+        <h2>KESELAMATAN & KUALITI</h2>
+
+        <div class="card-grid">
+            <div class="card">
+                <div class="card-label">Kawalan Kadar</div>
+                <div class="card-title">Rate Limiting</div>
+                <div class="card-desc">Had 30 permintaan seminit bagi setiap IP. Dilaksanakan pada lapisan aplikasi dan Nginx.</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Pengesahan URL</div>
+                <div class="card-title">URL Verification</div>
+                <div class="card-desc">Hanya URL dari sumber web yang disahkan dibenarkan dalam jawapan. LLM tidak boleh mereka URL.</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Penilaian Kendiri</div>
+                <div class="card-title">3-Dimensi Scoring</div>
+                <div class="card-desc">Setiap jawapan dinilai secara automatik: Relevan (1-5), Tepat (1-5), Lengkap (1-5). Skor rendah memberi amaran kualiti.</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Anti-Halusinasi</div>
+                <div class="card-title">Source Grounding</div>
+                <div class="card-desc">Arahan sistem mewajibkan rujukan seksyen dokumen. Jika maklumat tidak dijumpai, chatbot akan menyatakan terus terang.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div style="text-align:center; padding-top:2rem; border-top:1px solid var(--glass-border);">
+        <div style="font-size:0.7rem; color:var(--text-dim);">JKR FMI &mdash; Facility Management Intelligence</div>
+        <div style="font-size:0.65rem; color:var(--text-dim); margin-top:0.3rem;">Inovasi oleh Pendakwah Teknologi</div>
+    </div>
+
+</div>
+
+<script>
+// Fetch live stats
+fetch('api/health').then(function(r){ return r.json(); }).then(function(d){
+    var el = document.getElementById('stat-chunks');
+    if (el && d.documents_indexed) el.textContent = d.documents_indexed;
+    var kb = document.getElementById('kb-chunks');
+    if (kb && d.documents_indexed) kb.textContent = d.documents_indexed + ' chunks (600 aksara setiap chunk, 120 aksara overlap)';
+}).catch(function(){});
+</script>
+
+</body>
+</html>

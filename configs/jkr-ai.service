@@ -1,0 +1,47 @@
+[Unit]
+Description=JKR AI — Building Facility Management Assistant (FastAPI + uvicorn)
+After=network.target
+Wants=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=gx10
+Group=gx10
+WorkingDirectory=/opt/jkr-ai
+EnvironmentFile=/opt/jkr-ai/backend.env
+
+ExecStart=/opt/jkr-ai/venv/bin/uvicorn app:app \
+    --host 127.0.0.1 \
+    --port 8003 \
+    --workers 4 \
+    --loop uvloop \
+    --http h11 \
+    --limit-concurrency 100 \
+    --timeout-keep-alive 65 \
+    --backlog 1024 \
+    --no-access-log
+
+Restart=always
+RestartSec=3
+
+MemoryMax=8G
+MemoryHigh=6G
+CPUQuota=60%
+
+SupplementaryGroups=video render
+LimitNOFILE=65536
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/opt/jkr-ai/logs /opt/jkr-ai/chroma_db /opt/jkr-ai/.hf_cache
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=jkr-ai
+
+[Install]
+WantedBy=multi-user.target
